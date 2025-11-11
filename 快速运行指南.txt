@@ -1,0 +1,106 @@
+==================================================
+TCP性能分析 - Linux快速运行指南
+==================================================
+
+【你已经有所有trace文件了!】
+
+从你的文件列表看,你已经有:
+✓ renoTrace.tr, cubicTrace.tr, vegasTrace.tr, yeahTrace.tr
+✓ renoTrace_red.tr, cubicTrace_red.tr, vegasTrace_red.tr, yeahTrace_red.tr  
+✓ cubicTrace_run1.tr 到 cubicTrace_run5.tr
+
+现在只需要运行分析脚本生成图片!
+
+==================================================
+
+【方法1: 直接运行analyser3.py】
+
+cd ~/COMP3014J_Lab
+python3 analyser3.py
+
+# 生成的图片在当前目录:
+ls -lh *.png
+
+==================================================
+
+【方法2: 使用专门的分析脚本】
+
+chmod +x run_analysis_only.sh
+./run_analysis_only.sh
+
+# 这个脚本会:
+# 1. 检查所有trace文件
+# 2. 运行analyser3.py
+# 3. 显示生成的文件位置
+# 4. 告诉你如何查看图片
+
+==================================================
+
+【方法3: 完整重新运行一切】
+
+chmod +x run_all.sh
+./run_all.sh
+
+# 这会重新运行所有仿真+分析
+
+==================================================
+
+【生成的文件】
+
+运行后会在当前目录生成:
+
+图片文件:
+  partA_comparison.png      - Part A对比图
+  partB_comparison.png      - Part B对比图  
+  partC_reproducibility.png - Part C可重复性图
+
+数据文件:
+  partA_goodput_plr.csv     - Part A数据表
+
+==================================================
+
+【查看图片】
+
+方法1: 使用文件管理器
+  nautilus . &
+
+方法2: 使用图片查看器
+  eog partA_comparison.png &
+  eog partB_comparison.png &
+  eog partC_reproducibility.png &
+
+方法3: 使用xdg-open
+  xdg-open partA_comparison.png
+
+==================================================
+
+【如果analyser3.py报错】
+
+1. 检查是否安装了依赖:
+   pip3 install matplotlib numpy
+
+2. 检查Python版本:
+   python3 --version
+   # 需要Python 3.6+
+
+3. 查看详细错误:
+   python3 analyser3.py 2>&1 | tee analysis_log.txt
+
+==================================================
+
+【推荐步骤】
+
+因为你已经有所有trace文件,最简单的方法是:
+
+1. cd ~/COMP3014J_Lab
+
+2. python3 analyser3.py
+
+3. ls -lh *.png
+
+4. eog partA_comparison.png &
+
+就完成了!
+
+==================================================
+

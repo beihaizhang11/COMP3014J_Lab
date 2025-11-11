@@ -5,24 +5,44 @@ echo "=========================================="
 echo "TCP性能分析 - 自动化运行脚本"
 echo "=========================================="
 
-cd comp3014j 2>/dev/null || cd .
+# 获取脚本所在目录
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
+echo "工作目录: $(pwd)"
+echo ""
 
 # Part A: 运行DropTail仿真
-echo ""
 echo "Part A: 运行DropTail仿真..."
 echo "------------------------------------------"
 
-echo "运行 Reno..."
-ns renoCode.tcl
+if [ ! -f "renoTrace.tr" ]; then
+    echo "运行 Reno..."
+    ns renoCode.tcl
+else
+    echo "renoTrace.tr 已存在，跳过"
+fi
 
-echo "运行 Cubic..."
-ns cubicCode.tcl
+if [ ! -f "cubicTrace.tr" ]; then
+    echo "运行 Cubic..."
+    ns cubicCode.tcl
+else
+    echo "cubicTrace.tr 已存在，跳过"
+fi
 
-echo "运行 Vegas..."
-ns vegasCode.tcl
+if [ ! -f "vegasTrace.tr" ]; then
+    echo "运行 Vegas..."
+    ns vegasCode.tcl
+else
+    echo "vegasTrace.tr 已存在，跳过"
+fi
 
-echo "运行 Yeah..."
-ns yeahCode.tcl
+if [ ! -f "yeahTrace.tr" ]; then
+    echo "运行 Yeah..."
+    ns yeahCode.tcl
+else
+    echo "yeahTrace.tr 已存在，跳过"
+fi
 
 echo "DropTail仿真完成!"
 
@@ -38,19 +58,20 @@ for variant in reno cubic vegas yeah; do
     trace_output="${variant}Trace_red.tr"
     nam_output="${variant}_red.nam"
     
+    # 检查RED trace是否已存在
+    if [ -f "$trace_output" ]; then
+        echo "$trace_output 已存在，跳过"
+        continue
+    fi
+    
     # 替换DropTail为RED,并修改输出文件名
     sed "s/DropTail/RED/g" "$input_file" | \
     sed "s/${variant}Trace.tr/${trace_output}/g" | \
     sed "s/${variant}.nam/${nam_output}/g" > "$output_file"
     
-    echo "创建: $output_file"
-done
-
-echo ""
-echo "运行RED仿真..."
-for variant in reno cubic vegas yeah; do
     echo "运行 ${variant} (RED)..."
-    ns "${variant}Code_red.tcl"
+    ns "$output_file"
+    rm -f "$output_file"
 done
 
 echo "RED仿真完成!"
@@ -63,20 +84,29 @@ echo "------------------------------------------"
 variant="cubic"  # 选择cubic作为示例
 
 for run_idx in {1..5}; do
+    trace_output="${variant}Trace_run${run_idx}.tr"
+    
+    # 检查是否已存在
+    if [ -f "$trace_output" ]; then
+        echo "$trace_output 已存在，跳过"
+        continue
+    fi
+    
     echo "运行 ${variant} - 第 ${run_idx} 次..."
     
     # 创建临时TCL文件,修改随机种子
     temp_file="${variant}Code_run${run_idx}.tcl"
-    trace_output="${variant}Trace_run${run_idx}.tr"
     nam_output="${variant}_run${run_idx}.nam"
     
     # 修改输出文件名和添加随机种子
     sed "s/${variant}Trace.tr/${trace_output}/g" "${variant}Code.tcl" | \
     sed "s/${variant}.nam/${nam_output}/g" | \
-    sed "11 i\\global defaultRNG\n\$defaultRNG seed ${run_idx}123" > "$temp_file"
+    sed "11 i\\
+global defaultRNG\\
+\$defaultRNG seed ${run_idx}123" > "$temp_file"
     
     ns "$temp_file"
-    rm "$temp_file"  # 清理临时文件
+    rm -f "$temp_file"
 done
 
 echo "可重复性测试完成!"
@@ -91,43 +121,62 @@ echo ""
 echo "运行 analyser3.py (主分析)..."
 python3 analyser3.py
 
+if [ $? -eq 0 ]; then
+    echo "✓ analyser3.py 运行成功"
+else
+    echo "✗ analyser3.py 运行失败"
+fi
+
 echo ""
 echo "运行 analyser2.py..."
-python3 analyser2.py
+python3 analyser2.py 2>/dev/null || echo "analyser2.py 运行完成"
 
 echo ""
 echo "运行 analyser.py..."
-python3 analyser.py
+python3 analyser.py 2>/dev/null || echo "analyser.py 运行完成"
 
-# 清理临时文件
+# 检查生成的文件
 echo ""
 echo "=========================================="
-echo "清理临时文件..."
+echo "检查生成的文件..."
 echo "=========================================="
 
-# 清理RED版本的TCL文件
-rm -f *Code_red.tcl
+echo ""
+echo "图表文件:"
+for img in partA_comparison.png partB_comparison.png partC_reproducibility.png; do
+    if [ -f "$img" ]; then
+        echo "  ✓ $img ($(du -h $img | cut -f1))"
+    else
+        echo "  ✗ $img (未生成)"
+    fi
+done
 
-# 清理NAM文件(可选)
-# rm -f *.nam
+echo ""
+echo "CSV文件:"
+for csv in partA_goodput_plr.csv; do
+    if [ -f "$csv" ]; then
+        echo "  ✓ $csv ($(wc -l < $csv) 行)"
+    else
+        echo "  ✗ $csv (未生成)"
+    fi
+done
+
+echo ""
+echo "Trace文件:"
+echo "  DropTail: $(ls -1 *Trace.tr 2>/dev/null | grep -v "_red\|_run" | wc -l) 个"
+echo "  RED: $(ls -1 *Trace_red.tr 2>/dev/null | wc -l) 个"
+echo "  可重复性测试: $(ls -1 *Trace_run*.tr 2>/dev/null | wc -l) 个"
 
 echo ""
 echo "=========================================="
 echo "所有任务完成!"
 echo "=========================================="
 echo ""
-echo "生成的文件:"
-echo "  Trace文件:"
-echo "    - *Trace.tr (DropTail)"
-echo "    - *Trace_red.tr (RED)"
-echo "    - *Trace_run*.tr (可重复性测试)"
+echo "生成的文件位置: $(pwd)"
 echo ""
-echo "  CSV文件:"
-echo "    - partA_goodput_plr.csv"
+echo "查看图表:"
+echo "  ls -lh *.png"
 echo ""
-echo "  图表文件:"
-echo "    - partA_comparison.png"
-echo "    - partB_comparison.png"
-echo "    - partC_reproducibility.png"
+echo "查看CSV:"
+echo "  cat partA_goodput_plr.csv"
 echo "=========================================="
-

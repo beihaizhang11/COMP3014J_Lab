@@ -323,7 +323,7 @@ def run_part_a():
     bars1 = axes[0].bar(variants, goodputs, color=colors, alpha=0.8, edgecolor='black', linewidth=1.5)
     axes[0].set_ylabel('Goodput (Mbps)', fontsize=13, fontweight='bold')
     axes[0].set_xlabel('TCP Variants', fontsize=13, fontweight='bold')
-    axes[0].set_title('TCP Variants Goodput Comparison', fontsize=15, fontweight='bold', pad=20)
+    axes[0].set_title('TCP Variants Goodput Comparison', fontsize=15, fontweight='bold')
     axes[0].grid(axis='y', alpha=0.3, linestyle='--')
     axes[0].set_axisbelow(True)
     
@@ -340,7 +340,7 @@ def run_part_a():
     bars2 = axes[1].bar(variants, plrs, color=colors, alpha=0.8, edgecolor='black', linewidth=1.5)
     axes[1].set_ylabel('Packet Loss Rate (%)', fontsize=13, fontweight='bold')
     axes[1].set_xlabel('TCP Variants', fontsize=13, fontweight='bold')
-    axes[1].set_title('TCP Variants PLR Comparison', fontsize=15, fontweight='bold', pad=20)
+    axes[1].set_title('TCP Variants PLR Comparison', fontsize=15, fontweight='bold')
     axes[1].grid(axis='y', alpha=0.3, linestyle='--')
     axes[1].set_axisbelow(True)
     
@@ -534,7 +534,7 @@ def run_part_b():
         
         ax.set_ylabel(ylabel, fontsize=12, fontweight='bold')
         ax.set_xlabel('TCP Variants', fontsize=12, fontweight='bold')
-        ax.set_title(f'{title} Comparison: DropTail vs RED', fontsize=13, fontweight='bold', pad=15)
+        ax.set_title(f'{title} Comparison: DropTail vs RED', fontsize=13, fontweight='bold')
         ax.set_xticks(x)
         ax.set_xticklabels(variants, fontsize=11)
         ax.legend(fontsize=11, loc='best')
@@ -640,7 +640,7 @@ def run_part_c():
                        linewidth=1.5, capsize=15, error_kw={'linewidth': 2})
     axes[0].set_ylabel('Goodput (Mbps)', fontsize=13, fontweight='bold')
     axes[0].set_title(f'{variant.upper()} Goodput (Mean +/- 95% CI)', 
-                     fontsize=15, fontweight='bold', pad=20)
+                     fontsize=15, fontweight='bold')
     axes[0].grid(axis='y', alpha=0.3, linestyle='--')
     axes[0].set_axisbelow(True)
     
@@ -655,7 +655,7 @@ def run_part_c():
                        linewidth=1.5, capsize=15, error_kw={'linewidth': 2})
     axes[1].set_ylabel('Packet Loss Rate (%)', fontsize=13, fontweight='bold')
     axes[1].set_title(f'{variant.upper()} PLR (Mean +/- 95% CI)', 
-                     fontsize=15, fontweight='bold', pad=20)
+                     fontsize=15, fontweight='bold')
     axes[1].grid(axis='y', alpha=0.3, linestyle='--')
     axes[1].set_axisbelow(True)
     

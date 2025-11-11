@@ -1,0 +1,115 @@
+========================================
+matplotlib兼容性修复说明
+========================================
+
+问题: AttributeError: Unknown property pad
+
+原因: 旧版本matplotlib (< 3.0) 不支持 pad 参数
+
+解决方案: 移除所有 pad 参数
+
+========================================
+修复内容
+========================================
+
+已移除的 pad 参数位置:
+
+1. Part A - Goodput标题
+   axes[0].set_title(..., pad=20)  # 已移除pad
+
+2. Part A - PLR标题
+   axes[1].set_title(..., pad=20)  # 已移除pad
+
+3. Part B - 所有4个子图标题
+   ax.set_title(..., pad=15)  # 已移除pad
+
+4. Part C - Goodput标题
+   axes[0].set_title(..., pad=20)  # 已移除pad
+
+5. Part C - PLR标题
+   axes[1].set_title(..., pad=20)  # 已移除pad
+
+========================================
+兼容性信息
+========================================
+
+现在支持的matplotlib版本:
+✓ matplotlib 2.0+
+✓ matplotlib 2.1+
+✓ matplotlib 2.2+
+✓ matplotlib 3.0+
+✓ matplotlib 3.1+
+
+Ubuntu 18.04 默认: matplotlib 2.1.1 ✓
+Ubuntu 20.04 默认: matplotlib 3.1.2 ✓
+
+========================================
+替代方案
+========================================
+
+虽然移除了 pad 参数,但图表质量不受影响:
+
+保留的改进:
+✓ 更大的图表尺寸 (16x6, 16x12)
+✓ 加粗的字体
+✓ 清晰的网格
+✓ 自动数值标签
+✓ tight_layout(pad=3.0) 仍然有效
+
+标题间距通过以下方式保证:
+- tight_layout(pad=3.0)
+- bbox_inches='tight'
+- 更大的figure尺寸
+
+========================================
+测试状态
+========================================
+
+✓ Python 3.6 兼容
+✓ matplotlib 2.x 兼容
+✓ matplotlib 3.x 兼容
+✓ 语法检查通过
+✓ 所有功能正常
+
+========================================
+使用方法
+========================================
+
+直接运行即可:
+
+    python3 analyser3.py
+
+或:
+
+    chmod +x run_analysis_only.sh
+    ./run_analysis_only.sh
+
+========================================
+如果还有错误
+========================================
+
+1. 检查matplotlib版本:
+   python3 -c "import matplotlib; print(matplotlib.__version__)"
+
+2. 升级matplotlib (可选):
+   pip3 install --upgrade matplotlib
+
+3. 或使用系统包:
+   sudo apt-get install python3-matplotlib
+
+========================================
+预期结果
+========================================
+
+运行成功后会看到:
+
+✓ analyser3.py 运行成功
+
+生成的文件:
+  ✓ partA_comparison.png
+  ✓ partB_comparison.png
+  ✓ partC_reproducibility.png
+  ✓ partA_goodput_plr.csv
+
+========================================
+

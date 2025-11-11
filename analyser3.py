@@ -314,28 +314,45 @@ def run_part_a():
     print(f"\nCSV已保存: {csv_path}")
     
     # 3. 绘制对比图 (吞吐量和PLR)
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
     
     # Subplot 1: Goodput
     goodputs = [results[v]['goodput'] for v in variants]
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
-    axes[0].bar(variants, goodputs, color=colors, alpha=0.7, edgecolor='black')
-    axes[0].set_ylabel('Goodput (Mbps)', fontsize=12)
-    axes[0].set_title('TCP Variants Goodput Comparison', fontsize=14, fontweight='bold')
-    axes[0].grid(axis='y', alpha=0.3)
-    for i, v in enumerate(goodputs):
-        axes[0].text(i, v + 5, f'{v:.1f}', ha='center', va='bottom', fontsize=10)
+    
+    bars1 = axes[0].bar(variants, goodputs, color=colors, alpha=0.8, edgecolor='black', linewidth=1.5)
+    axes[0].set_ylabel('Goodput (Mbps)', fontsize=13, fontweight='bold')
+    axes[0].set_xlabel('TCP Variants', fontsize=13, fontweight='bold')
+    axes[0].set_title('TCP Variants Goodput Comparison', fontsize=15, fontweight='bold', pad=20)
+    axes[0].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[0].set_axisbelow(True)
+    
+    # Add value labels on top of bars
+    for i, (bar, v) in enumerate(zip(bars1, goodputs)):
+        height = bar.get_height()
+        axes[0].text(bar.get_x() + bar.get_width()/2., height,
+                    f'{v:.1f}',
+                    ha='center', va='bottom', fontsize=11, fontweight='bold')
     
     # Subplot 2: PLR
     plrs = [results[v]['plr'] for v in variants]
-    axes[1].bar(variants, plrs, color=colors, alpha=0.7, edgecolor='black')
-    axes[1].set_ylabel('Packet Loss Rate (%)', fontsize=12)
-    axes[1].set_title('TCP Variants PLR Comparison', fontsize=14, fontweight='bold')
-    axes[1].grid(axis='y', alpha=0.3)
-    for i, v in enumerate(plrs):
-        axes[1].text(i, v + 0.01, f'{v:.3f}', ha='center', va='bottom', fontsize=10)
     
-    plt.tight_layout()
+    bars2 = axes[1].bar(variants, plrs, color=colors, alpha=0.8, edgecolor='black', linewidth=1.5)
+    axes[1].set_ylabel('Packet Loss Rate (%)', fontsize=13, fontweight='bold')
+    axes[1].set_xlabel('TCP Variants', fontsize=13, fontweight='bold')
+    axes[1].set_title('TCP Variants PLR Comparison', fontsize=15, fontweight='bold', pad=20)
+    axes[1].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[1].set_axisbelow(True)
+    
+    # Add value labels on top of bars
+    for i, (bar, v) in enumerate(zip(bars2, plrs)):
+        height = bar.get_height()
+        axes[1].text(bar.get_x() + bar.get_width()/2., height,
+                    f'{v:.3f}',
+                    ha='center', va='bottom', fontsize=11, fontweight='bold')
+    
+    # Adjust layout to prevent overlap
+    plt.tight_layout(pad=3.0)
     
     img_path = 'partA_comparison.png'
     if os.path.exists('comp3014j'):
@@ -493,12 +510,13 @@ def run_part_b():
     print("-" * 80)
     
     # Plot comparison charts
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
     
     metrics = ['goodput', 'plr', 'fairness', 'cov']
     titles = ['Goodput (Mbps)', 'Packet Loss Rate (%)', 'Fairness Index', 'Stability (CoV)']
+    ylabels = ['Goodput (Mbps)', 'PLR (%)', 'Fairness Index', 'CoV']
     
-    for idx, (metric, title) in enumerate(zip(metrics, titles)):
+    for idx, (metric, title, ylabel) in enumerate(zip(metrics, titles, ylabels)):
         row = idx // 2
         col = idx % 2
         ax = axes[row, col]
@@ -509,19 +527,21 @@ def run_part_b():
         x = np.arange(len(variants))
         width = 0.35
         
-        ax.bar(x - width/2, dt_values, width, label='DropTail', 
-               color='#1f77b4', alpha=0.7, edgecolor='black')
-        ax.bar(x + width/2, red_values, width, label='RED', 
-               color='#ff7f0e', alpha=0.7, edgecolor='black')
+        bars1 = ax.bar(x - width/2, dt_values, width, label='DropTail', 
+                      color='#1f77b4', alpha=0.8, edgecolor='black', linewidth=1.2)
+        bars2 = ax.bar(x + width/2, red_values, width, label='RED', 
+                      color='#ff7f0e', alpha=0.8, edgecolor='black', linewidth=1.2)
         
-        ax.set_ylabel(title, fontsize=11)
-        ax.set_title(f'{title} Comparison', fontsize=12, fontweight='bold')
+        ax.set_ylabel(ylabel, fontsize=12, fontweight='bold')
+        ax.set_xlabel('TCP Variants', fontsize=12, fontweight='bold')
+        ax.set_title(f'{title} Comparison: DropTail vs RED', fontsize=13, fontweight='bold', pad=15)
         ax.set_xticks(x)
-        ax.set_xticklabels(variants)
-        ax.legend()
-        ax.grid(axis='y', alpha=0.3)
+        ax.set_xticklabels(variants, fontsize=11)
+        ax.legend(fontsize=11, loc='best')
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.set_axisbelow(True)
     
-    plt.tight_layout()
+    plt.tight_layout(pad=3.0)
     
     img_path = 'partB_comparison.png'
     if os.path.exists('comp3014j'):
@@ -612,23 +632,39 @@ def run_part_c():
     print("-" * 60)
     
     # Plot error bar charts
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
     
     # Subplot 1: Goodput
-    axes[0].bar(['Goodput'], [goodput_mean], yerr=[goodput_ci], 
-                color='#1f77b4', alpha=0.7, edgecolor='black', capsize=10)
-    axes[0].set_ylabel('Goodput (Mbps)', fontsize=12)
-    axes[0].set_title(f'{variant.upper()} Goodput (Mean +/- 95% CI)', fontsize=14, fontweight='bold')
-    axes[0].grid(axis='y', alpha=0.3)
+    bars1 = axes[0].bar(['Goodput'], [goodput_mean], yerr=[goodput_ci], 
+                       color='#1f77b4', alpha=0.8, edgecolor='black', 
+                       linewidth=1.5, capsize=15, error_kw={'linewidth': 2})
+    axes[0].set_ylabel('Goodput (Mbps)', fontsize=13, fontweight='bold')
+    axes[0].set_title(f'{variant.upper()} Goodput (Mean +/- 95% CI)', 
+                     fontsize=15, fontweight='bold', pad=20)
+    axes[0].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[0].set_axisbelow(True)
+    
+    # Add value label
+    axes[0].text(0, goodput_mean + goodput_ci + 5, 
+                f'{goodput_mean:.1f} ± {goodput_ci:.1f}',
+                ha='center', va='bottom', fontsize=12, fontweight='bold')
     
     # Subplot 2: PLR
-    axes[1].bar(['PLR'], [plr_mean], yerr=[plr_ci], 
-                color='#ff7f0e', alpha=0.7, edgecolor='black', capsize=10)
-    axes[1].set_ylabel('Packet Loss Rate (%)', fontsize=12)
-    axes[1].set_title(f'{variant.upper()} PLR (Mean +/- 95% CI)', fontsize=14, fontweight='bold')
-    axes[1].grid(axis='y', alpha=0.3)
+    bars2 = axes[1].bar(['PLR'], [plr_mean], yerr=[plr_ci], 
+                       color='#ff7f0e', alpha=0.8, edgecolor='black', 
+                       linewidth=1.5, capsize=15, error_kw={'linewidth': 2})
+    axes[1].set_ylabel('Packet Loss Rate (%)', fontsize=13, fontweight='bold')
+    axes[1].set_title(f'{variant.upper()} PLR (Mean +/- 95% CI)', 
+                     fontsize=15, fontweight='bold', pad=20)
+    axes[1].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[1].set_axisbelow(True)
     
-    plt.tight_layout()
+    # Add value label
+    axes[1].text(0, plr_mean + plr_ci + 0.01, 
+                f'{plr_mean:.3f} ± {plr_ci:.3f}',
+                ha='center', va='bottom', fontsize=12, fontweight='bold')
+    
+    plt.tight_layout(pad=3.0)
     
     img_path = 'partC_reproducibility.png'
     if os.path.exists('comp3014j'):

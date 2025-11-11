@@ -1,0 +1,63 @@
+========================================
+TCP性能分析器 - 快速使用指南
+========================================
+
+【最简单的方法】
+
+Windows用户:
+  双击运行: run_all.bat
+
+Linux/Mac用户:
+  在终端运行: ./run_all.sh
+
+脚本会自动完成所有步骤并生成报告所需的所有文件。
+
+========================================
+
+【手动运行步骤】
+
+1. 生成DropTail的trace文件
+   ns renoCode.tcl
+   ns cubicCode.tcl
+   ns vegasCode.tcl
+   ns yeahCode.tcl
+
+2. 修改TCL文件将DropTail改为RED,重新运行
+   (或使用run_all.bat自动完成)
+
+3. 运行分析脚本
+   python analyser3.py
+
+========================================
+
+【生成的文件】
+
+CSV数据:
+  - partA_goodput_plr.csv
+
+图表:
+  - partA_comparison.png (Part A对比图)
+  - partB_comparison.png (Part B对比图)  
+  - partC_reproducibility.png (Part C可重复性)
+
+========================================
+
+【常见问题】
+
+Q: 提示"文件不存在"?
+A: 先运行ns仿真生成trace文件
+
+Q: Part B显示警告?
+A: 使用run_all.bat自动生成RED的trace文件
+
+Q: 需要安装什么?
+A: pip install matplotlib numpy
+
+========================================
+
+详细说明请查看:
+  - README_analyser3.md (英文)
+  - USAGE_GUIDE.md (详细指南)
+
+========================================
+

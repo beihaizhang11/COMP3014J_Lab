@@ -1,20 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-analyser3.py - TCP性能分析器
-用于分析不同TCP变体和队列算法的性能
+analyser3.py - TCP Performance Analyzer
+Analyzes performance of different TCP variants and queue algorithms
 
-支持的功能:
-- Part A: 分析4种TCP变体 (Reno, Cubic, Vegas, Yeah)
-- Part B: 比较DropTail vs RED队列算法
-- Part C: 可重复性测试
+Features:
+- Part A: Analyze 4 TCP variants (Reno, Cubic, Vegas, Yeah)
+- Part B: Compare DropTail vs RED queue algorithms
+- Part C: Reproducibility test
 """
+
+import matplotlib
+# Use non-interactive backend to avoid display issues
+matplotlib.use('Agg')
+# Disable warnings about fonts
+import warnings
+warnings.filterwarnings('ignore')
 
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
 import os
 from math import ceil
+
+# Set matplotlib to use only ASCII characters
+plt.rcParams['axes.unicode_minus'] = False
 
 class TCPAnalyzer:
     """TCP trace文件分析器"""
@@ -306,21 +316,21 @@ def run_part_a():
     # 3. 绘制对比图 (吞吐量和PLR)
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     
-    # 子图1: 吞吐量
+    # Subplot 1: Goodput
     goodputs = [results[v]['goodput'] for v in variants]
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
     axes[0].bar(variants, goodputs, color=colors, alpha=0.7, edgecolor='black')
-    axes[0].set_ylabel('吞吐量 (Mbps)', fontsize=12)
-    axes[0].set_title('TCP变体吞吐量对比', fontsize=14, fontweight='bold')
+    axes[0].set_ylabel('Goodput (Mbps)', fontsize=12)
+    axes[0].set_title('TCP Variants Goodput Comparison', fontsize=14, fontweight='bold')
     axes[0].grid(axis='y', alpha=0.3)
     for i, v in enumerate(goodputs):
         axes[0].text(i, v + 5, f'{v:.1f}', ha='center', va='bottom', fontsize=10)
     
-    # 子图2: PLR
+    # Subplot 2: PLR
     plrs = [results[v]['plr'] for v in variants]
     axes[1].bar(variants, plrs, color=colors, alpha=0.7, edgecolor='black')
-    axes[1].set_ylabel('包丢失率 (%)', fontsize=12)
-    axes[1].set_title('TCP变体包丢失率对比', fontsize=14, fontweight='bold')
+    axes[1].set_ylabel('Packet Loss Rate (%)', fontsize=12)
+    axes[1].set_title('TCP Variants PLR Comparison', fontsize=14, fontweight='bold')
     axes[1].grid(axis='y', alpha=0.3)
     for i, v in enumerate(plrs):
         axes[1].text(i, v + 0.01, f'{v:.3f}', ha='center', va='bottom', fontsize=10)
@@ -482,11 +492,11 @@ def run_part_b():
     print(f"{'平均稳定性(CoV)':<20} {dt_avg_cov:<25.4f} {red_avg_cov:<25.4f}")
     print("-" * 80)
     
-    # 绘制对比图
+    # Plot comparison charts
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     
     metrics = ['goodput', 'plr', 'fairness', 'cov']
-    titles = ['吞吐量 (Mbps)', '包丢失率 (%)', '公平性指数', '稳定性 (CoV)']
+    titles = ['Goodput (Mbps)', 'Packet Loss Rate (%)', 'Fairness Index', 'Stability (CoV)']
     
     for idx, (metric, title) in enumerate(zip(metrics, titles)):
         row = idx // 2
@@ -505,7 +515,7 @@ def run_part_b():
                color='#ff7f0e', alpha=0.7, edgecolor='black')
         
         ax.set_ylabel(title, fontsize=11)
-        ax.set_title(f'{title}对比', fontsize=12, fontweight='bold')
+        ax.set_title(f'{title} Comparison', fontsize=12, fontweight='bold')
         ax.set_xticks(x)
         ax.set_xticklabels(variants)
         ax.legend()
@@ -601,21 +611,21 @@ def run_part_c():
     print(f"{'PLR (%)':<20} {plr_mean:<15.4f} {plr_std:<15.4f} ±{plr_ci:<15.4f}")
     print("-" * 60)
     
-    # 绘制误差条图
+    # Plot error bar charts
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     
-    # 子图1: 吞吐量
+    # Subplot 1: Goodput
     axes[0].bar(['Goodput'], [goodput_mean], yerr=[goodput_ci], 
                 color='#1f77b4', alpha=0.7, edgecolor='black', capsize=10)
-    axes[0].set_ylabel('吞吐量 (Mbps)', fontsize=12)
-    axes[0].set_title(f'{variant.upper()} 吞吐量 (均值 ± 95% CI)', fontsize=14, fontweight='bold')
+    axes[0].set_ylabel('Goodput (Mbps)', fontsize=12)
+    axes[0].set_title(f'{variant.upper()} Goodput (Mean +/- 95% CI)', fontsize=14, fontweight='bold')
     axes[0].grid(axis='y', alpha=0.3)
     
-    # 子图2: PLR
+    # Subplot 2: PLR
     axes[1].bar(['PLR'], [plr_mean], yerr=[plr_ci], 
                 color='#ff7f0e', alpha=0.7, edgecolor='black', capsize=10)
-    axes[1].set_ylabel('包丢失率 (%)', fontsize=12)
-    axes[1].set_title(f'{variant.upper()} PLR (均值 ± 95% CI)', fontsize=14, fontweight='bold')
+    axes[1].set_ylabel('Packet Loss Rate (%)', fontsize=12)
+    axes[1].set_title(f'{variant.upper()} PLR (Mean +/- 95% CI)', fontsize=14, fontweight='bold')
     axes[1].grid(axis='y', alpha=0.3)
     
     plt.tight_layout()

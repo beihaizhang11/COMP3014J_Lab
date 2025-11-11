@@ -1,0 +1,90 @@
+========================================
+TCP Performance Analyzer - Quick Start
+========================================
+
+You already have all trace files!
+Now just run the analyzer to generate plots.
+
+========================================
+STEP 1: Install Dependencies (Ubuntu)
+========================================
+
+Run this script:
+    chmod +x install_dependencies.sh
+    ./install_dependencies.sh
+
+Or manually:
+    sudo apt-get update
+    sudo apt-get install -y python3-matplotlib python3-numpy
+
+========================================
+STEP 2: Run Analyzer
+========================================
+
+    python3 analyser3.py
+
+This will generate:
+    - partA_comparison.png
+    - partB_comparison.png
+    - partC_reproducibility.png
+    - partA_goodput_plr.csv
+
+========================================
+STEP 3: View Images
+========================================
+
+    ls -lh *.png
+    eog *.png &
+
+Or:
+    xdg-open partA_comparison.png
+
+========================================
+ALL IN ONE SCRIPT
+========================================
+
+If you want to rerun everything:
+    chmod +x run_all.sh
+    ./run_all.sh
+
+If you just want to run analysis:
+    chmod +x run_analysis_only.sh
+    ./run_analysis_only.sh
+
+========================================
+TROUBLESHOOTING
+========================================
+
+Problem: zlib error when installing matplotlib
+Solution: Run install_dependencies.sh
+
+Problem: No plots generated
+Solution: Check if trace files exist:
+    ls -lh *Trace.tr
+
+Problem: Import error
+Solution: Install packages:
+    sudo apt-get install python3-matplotlib python3-numpy
+
+========================================
+WHAT'S CHANGED
+========================================
+
+✓ All plot labels now in ENGLISH (no encoding issues)
+✓ matplotlib uses 'Agg' backend (no display needed)
+✓ Warnings disabled
+✓ Works perfectly on Linux
+
+========================================
+FILE LOCATIONS
+========================================
+
+All generated files will be in:
+    ~/COMP3014J_Lab/
+
+Check with:
+    ls -lh ~/COMP3014J_Lab/*.png
+    ls -lh ~/COMP3014J_Lab/*.csv
+
+========================================
+

@@ -313,43 +313,42 @@ def run_part_a():
     
     print(f"\nCSV已保存: {csv_path}")
     
-    # 3. 绘制对比图 (吞吐量和PLR)
-    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+    # 3. 绘制对比图 (4个子图: 吞吐量、PLR、公平性、稳定性)
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
     
-    # Subplot 1: Goodput
-    goodputs = [results[v]['goodput'] for v in variants]
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
     
-    bars1 = axes[0].bar(variants, goodputs, color=colors, alpha=0.8, edgecolor='black', linewidth=1.5)
-    axes[0].set_ylabel('Goodput (Mbps)', fontsize=13, fontweight='bold')
-    axes[0].set_xlabel('TCP Variants', fontsize=13, fontweight='bold')
-    axes[0].set_title('TCP Variants Goodput Comparison', fontsize=15, fontweight='bold')
-    axes[0].grid(axis='y', alpha=0.3, linestyle='--')
-    axes[0].set_axisbelow(True)
-    
-    # Add value labels on top of bars
-    for i, (bar, v) in enumerate(zip(bars1, goodputs)):
-        height = bar.get_height()
-        axes[0].text(bar.get_x() + bar.get_width()/2., height,
-                    f'{v:.1f}',
-                    ha='center', va='bottom', fontsize=11, fontweight='bold')
-    
-    # Subplot 2: PLR
+    # 准备所有数据
+    goodputs = [results[v]['goodput'] for v in variants]
     plrs = [results[v]['plr'] for v in variants]
+    fairness_vals = [results[v]['fairness'] for v in variants]
+    cov_vals = [results[v]['cov'] for v in variants]
     
-    bars2 = axes[1].bar(variants, plrs, color=colors, alpha=0.8, edgecolor='black', linewidth=1.5)
-    axes[1].set_ylabel('Packet Loss Rate (%)', fontsize=13, fontweight='bold')
-    axes[1].set_xlabel('TCP Variants', fontsize=13, fontweight='bold')
-    axes[1].set_title('TCP Variants PLR Comparison', fontsize=15, fontweight='bold')
-    axes[1].grid(axis='y', alpha=0.3, linestyle='--')
-    axes[1].set_axisbelow(True)
+    metrics_data = [goodputs, plrs, fairness_vals, cov_vals]
+    titles = ['Goodput Comparison', 'Packet Loss Rate Comparison', 
+              'Fairness Index Comparison', 'Stability (CoV) Comparison']
+    ylabels = ['Goodput (Mbps)', 'PLR (%)', 'Fairness Index', 'CoV']
+    formats = ['{:.1f}', '{:.3f}', '{:.4f}', '{:.4f}']
     
-    # Add value labels on top of bars
-    for i, (bar, v) in enumerate(zip(bars2, plrs)):
-        height = bar.get_height()
-        axes[1].text(bar.get_x() + bar.get_width()/2., height,
-                    f'{v:.3f}',
-                    ha='center', va='bottom', fontsize=11, fontweight='bold')
+    for idx, (data, title, ylabel, fmt) in enumerate(zip(metrics_data, titles, ylabels, formats)):
+        row = idx // 2
+        col = idx % 2
+        ax = axes[row, col]
+        
+        bars = ax.bar(variants, data, color=colors, alpha=0.8, 
+                     edgecolor='black', linewidth=1.5)
+        ax.set_ylabel(ylabel, fontsize=13, fontweight='bold')
+        ax.set_xlabel('TCP Variants', fontsize=13, fontweight='bold')
+        ax.set_title(title, fontsize=15, fontweight='bold')
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.set_axisbelow(True)
+        
+        # Add value labels on top of bars
+        for bar, val in zip(bars, data):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                   fmt.format(val),
+                   ha='center', va='bottom', fontsize=11, fontweight='bold')
     
     # Adjust layout to prevent overlap
     plt.tight_layout(pad=3.0)

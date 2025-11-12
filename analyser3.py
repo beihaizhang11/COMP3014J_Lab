@@ -630,38 +630,95 @@ def run_part_c():
     print(f"{'PLR (%)':<20} {plr_mean:<15.4f} {plr_std:<15.4f} ±{plr_ci:<15.4f}")
     print("-" * 60)
     
-    # Plot error bar charts
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    # Plot detailed charts showing all 5 runs + mean with error bars
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
     
-    # Subplot 1: Goodput
-    bars1 = axes[0].bar(['Goodput'], [goodput_mean], yerr=[goodput_ci], 
-                       color='#1f77b4', alpha=0.8, edgecolor='black', 
-                       linewidth=1.5, capsize=15, error_kw={'linewidth': 2})
-    axes[0].set_ylabel('Goodput (Mbps)', fontsize=13, fontweight='bold')
-    axes[0].set_title(f'{variant.upper()} Goodput (Mean +/- 95% CI)', 
-                     fontsize=15, fontweight='bold')
-    axes[0].grid(axis='y', alpha=0.3, linestyle='--')
-    axes[0].set_axisbelow(True)
+    # Subplot 1: Goodput - Individual runs with mean line
+    x_pos = np.arange(len(goodputs))
+    bars1 = axes[0, 0].bar(x_pos, goodputs, color='#1f77b4', alpha=0.7, 
+                           edgecolor='black', linewidth=1.5, width=0.6)
+    axes[0, 0].axhline(y=goodput_mean, color='red', linestyle='--', 
+                       linewidth=2.5, label=f'Mean: {goodput_mean:.2f} Mbps')
+    axes[0, 0].fill_between([-0.5, len(goodputs)-0.5], 
+                            goodput_mean - goodput_ci, 
+                            goodput_mean + goodput_ci,
+                            alpha=0.2, color='red', label='95% CI')
+    axes[0, 0].set_ylabel('Goodput (Mbps)', fontsize=13, fontweight='bold')
+    axes[0, 0].set_xlabel('Run Number', fontsize=13, fontweight='bold')
+    axes[0, 0].set_title(f'{variant.upper()} - Goodput Across 5 Runs', 
+                        fontsize=14, fontweight='bold')
+    axes[0, 0].set_xticks(x_pos)
+    axes[0, 0].set_xticklabels([f'Run {i+1}' for i in range(len(goodputs))], fontsize=11)
+    axes[0, 0].legend(loc='best', fontsize=11)
+    axes[0, 0].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[0, 0].set_axisbelow(True)
     
-    # Add value label
-    axes[0].text(0, goodput_mean + goodput_ci + 5, 
-                f'{goodput_mean:.1f} ± {goodput_ci:.1f}',
-                ha='center', va='bottom', fontsize=12, fontweight='bold')
+    # Add value labels
+    for i, (bar, val) in enumerate(zip(bars1, goodputs)):
+        height = bar.get_height()
+        axes[0, 0].text(bar.get_x() + bar.get_width()/2., height,
+                       f'{val:.1f}',
+                       ha='center', va='bottom', fontsize=10, fontweight='bold')
     
-    # Subplot 2: PLR
-    bars2 = axes[1].bar(['PLR'], [plr_mean], yerr=[plr_ci], 
-                       color='#ff7f0e', alpha=0.8, edgecolor='black', 
-                       linewidth=1.5, capsize=15, error_kw={'linewidth': 2})
-    axes[1].set_ylabel('Packet Loss Rate (%)', fontsize=13, fontweight='bold')
-    axes[1].set_title(f'{variant.upper()} PLR (Mean +/- 95% CI)', 
-                     fontsize=15, fontweight='bold')
-    axes[1].grid(axis='y', alpha=0.3, linestyle='--')
-    axes[1].set_axisbelow(True)
+    # Subplot 2: Goodput - Mean with 95% CI error bars
+    axes[0, 1].bar(['Mean Goodput'], [goodput_mean], yerr=[goodput_ci], 
+                   color='#1f77b4', alpha=0.8, edgecolor='black', 
+                   linewidth=2, capsize=20, error_kw={'linewidth': 3, 'capthick': 3},
+                   width=0.4)
+    axes[0, 1].set_ylabel('Goodput (Mbps)', fontsize=13, fontweight='bold')
+    axes[0, 1].set_title(f'{variant.upper()} - Mean Goodput ± 95% CI', 
+                        fontsize=14, fontweight='bold')
+    axes[0, 1].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[0, 1].set_axisbelow(True)
     
-    # Add value label
-    axes[1].text(0, plr_mean + plr_ci + 0.01, 
-                f'{plr_mean:.3f} ± {plr_ci:.3f}',
-                ha='center', va='bottom', fontsize=12, fontweight='bold')
+    # Add detailed statistics
+    stats_text = f'Mean: {goodput_mean:.2f}\nStd: {goodput_std:.2f}\n95% CI: ±{goodput_ci:.2f}'
+    axes[0, 1].text(0.5, 0.95, stats_text, transform=axes[0, 1].transAxes,
+                   fontsize=11, verticalalignment='top', horizontalalignment='center',
+                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+    
+    # Subplot 3: PLR - Individual runs with mean line
+    bars3 = axes[1, 0].bar(x_pos, plrs, color='#ff7f0e', alpha=0.7, 
+                           edgecolor='black', linewidth=1.5, width=0.6)
+    axes[1, 0].axhline(y=plr_mean, color='red', linestyle='--', 
+                       linewidth=2.5, label=f'Mean: {plr_mean:.4f}%')
+    axes[1, 0].fill_between([-0.5, len(plrs)-0.5], 
+                            plr_mean - plr_ci, 
+                            plr_mean + plr_ci,
+                            alpha=0.2, color='red', label='95% CI')
+    axes[1, 0].set_ylabel('Packet Loss Rate (%)', fontsize=13, fontweight='bold')
+    axes[1, 0].set_xlabel('Run Number', fontsize=13, fontweight='bold')
+    axes[1, 0].set_title(f'{variant.upper()} - PLR Across 5 Runs', 
+                        fontsize=14, fontweight='bold')
+    axes[1, 0].set_xticks(x_pos)
+    axes[1, 0].set_xticklabels([f'Run {i+1}' for i in range(len(plrs))], fontsize=11)
+    axes[1, 0].legend(loc='best', fontsize=11)
+    axes[1, 0].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[1, 0].set_axisbelow(True)
+    
+    # Add value labels
+    for i, (bar, val) in enumerate(zip(bars3, plrs)):
+        height = bar.get_height()
+        axes[1, 0].text(bar.get_x() + bar.get_width()/2., height,
+                       f'{val:.3f}',
+                       ha='center', va='bottom', fontsize=10, fontweight='bold')
+    
+    # Subplot 4: PLR - Mean with 95% CI error bars
+    axes[1, 1].bar(['Mean PLR'], [plr_mean], yerr=[plr_ci], 
+                   color='#ff7f0e', alpha=0.8, edgecolor='black', 
+                   linewidth=2, capsize=20, error_kw={'linewidth': 3, 'capthick': 3},
+                   width=0.4)
+    axes[1, 1].set_ylabel('Packet Loss Rate (%)', fontsize=13, fontweight='bold')
+    axes[1, 1].set_title(f'{variant.upper()} - Mean PLR ± 95% CI', 
+                        fontsize=14, fontweight='bold')
+    axes[1, 1].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[1, 1].set_axisbelow(True)
+    
+    # Add detailed statistics
+    stats_text = f'Mean: {plr_mean:.4f}\nStd: {plr_std:.4f}\n95% CI: ±{plr_ci:.4f}'
+    axes[1, 1].text(0.5, 0.95, stats_text, transform=axes[1, 1].transAxes,
+                   fontsize=11, verticalalignment='top', horizontalalignment='center',
+                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
     
     plt.tight_layout(pad=3.0)
     

@@ -83,31 +83,79 @@ echo "------------------------------------------"
 
 variant="cubic"  # 选择cubic作为示例
 
+# 删除旧的运行文件,确保重新生成
+echo "清理旧的可重复性测试文件..."
+rm -f ${variant}Trace_run*.tr ${variant}_run*.nam
+
 for run_idx in {1..5}; do
-    trace_output="${variant}Trace_run${run_idx}.tr"
-    
-    # 检查是否已存在
-    if [ -f "$trace_output" ]; then
-        echo "$trace_output 已存在，跳过"
-        continue
-    fi
-    
     echo "运行 ${variant} - 第 ${run_idx} 次..."
     
-    # 创建临时TCL文件,修改随机种子
     temp_file="${variant}Code_run${run_idx}.tcl"
+    trace_output="${variant}Trace_run${run_idx}.tr"
     nam_output="${variant}_run${run_idx}.nam"
     
-    # 修改输出文件名和添加随机种子
-    sed "s/${variant}Trace.tr/${trace_output}/g" "${variant}Code.tcl" | \
-    sed "s/${variant}.nam/${nam_output}/g" | \
-    sed "11 i\\
-global defaultRNG\\
-\$defaultRNG seed ${run_idx}123" > "$temp_file"
+    # 计算不同的随机种子
+    seed=$((run_idx * 12345 + 6789))
     
+    # 使用awk创建修改后的TCL文件,添加正确的随机种子语法
+    awk -v seed="$seed" -v trace="$trace_output" -v nam="$nam_output" '
+    {
+        # 修改trace文件名
+        if ($0 ~ /set tracefile1 \[open.*\.tr w\]/) {
+            print "set tracefile1 [open " trace " w]"
+            next
+        }
+        # 修改nam文件名
+        if ($0 ~ /set namfile \[open.*\.nam w\]/) {
+            print "set namfile [open " nam " w]"
+            next
+        }
+        # 在创建Simulator后添加随机种子
+        if ($0 ~ /set ns \[new Simulator\]/) {
+            print $0
+            print ""
+            print "# Random seed configuration for reproducibility test"
+            print "set rng [new RNG]"
+            print "$rng seed " seed
+            print "set rng2 [new RNG]"
+            print "$rng2 seed " (seed + 111)
+            next
+        }
+        print $0
+    }' "${variant}Code.tcl" > "$temp_file"
+    
+    echo "  随机种子: $seed"
+    echo "  输出文件: $trace_output"
+    
+    # 运行仿真
     ns "$temp_file"
+    
+    # 检查是否成功
+    if [ -f "$trace_output" ]; then
+        size=$(du -h "$trace_output" | cut -f1)
+        echo "  ✓ 完成! 文件大小: $size"
+    else
+        echo "  ✗ 失败! 未生成trace文件"
+    fi
+    
+    # 清理临时文件
     rm -f "$temp_file"
 done
+
+echo ""
+echo "验证文件差异..."
+# 快速检查文件是否不同
+file1="${variant}Trace_run1.tr"
+file2="${variant}Trace_run2.tr"
+if [ -f "$file1" ] && [ -f "$file2" ]; then
+    size1=$(stat -f%z "$file1" 2>/dev/null || stat -c%s "$file1" 2>/dev/null)
+    size2=$(stat -f%z "$file2" 2>/dev/null || stat -c%s "$file2" 2>/dev/null)
+    if [ "$size1" = "$size2" ]; then
+        echo "  ⚠ 警告: Run 1和Run 2文件大小相同,可能随机性不足"
+    else
+        echo "  ✓ 文件大小不同,随机性正常"
+    fi
+fi
 
 echo "可重复性测试完成!"
 

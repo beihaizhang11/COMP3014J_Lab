@@ -579,7 +579,7 @@ def run_part_c():
     print("  运行5: cubicTrace_run5.tr")
     
     # 检查是否有多次运行的文件
-    variant = 'cubic'  # 选择最有趣的变体
+    variant = 'reno'  # 选择Reno - 对随机性更敏感,变化更明显
     num_runs = 5
     
     goodputs = []

@@ -2,14 +2,14 @@
 # 生成5次不同的cubic运行,使用不同的随机种子和网络抖动
 
 echo "=========================================="
-echo "生成5次可重复性测试运行 (Cubic)"
+echo "生成5次可重复性测试运行 (Reno)"
 echo "=========================================="
 
 # 获取脚本所在目录
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-variant="cubic"
+variant="reno"
 
 echo ""
 echo "为每次运行创建不同的配置..."

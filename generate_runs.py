@@ -14,8 +14,8 @@ def modify_tcl_for_run(input_file, output_file, trace_file, nam_file, run_number
     修改TCL文件以生成不同的运行
     
     策略:
-    1. 修改随机种子
-    2. 修改启动时间(添加小的随机抖动)
+    1. 修改随机种子 (多种方式)
+    2. 修改启动时间(添加随机抖动)
     3. 修改输出文件名
     """
     with open(input_file, 'r') as f:
@@ -24,9 +24,15 @@ def modify_tcl_for_run(input_file, output_file, trace_file, nam_file, run_number
     # 生成不同的随机种子
     seed = run_number * 12345 + 6789
     
+    # 生成启动时间抖动 (0-0.5秒)
+    random.seed(seed)
+    jitter1 = random.uniform(0, 0.5)
+    jitter2 = random.uniform(0, 0.5)
+    
     # 替换输出文件名
-    content = content.replace('cubicTrace.tr', trace_file)
-    content = content.replace('cubic.nam', nam_file)
+    variant = 'reno' if 'reno' in input_file else 'cubic'
+    content = content.replace(f'{variant}Trace.tr', trace_file)
+    content = content.replace(f'{variant}.nam', nam_file)
     
     # 在 "set ns [new Simulator]" 之后添加随机种子配置
     lines = content.split('\n')
@@ -38,18 +44,23 @@ def modify_tcl_for_run(input_file, output_file, trace_file, nam_file, run_number
         # 在创建Simulator后添加随机种子
         if 'set ns [new Simulator]' in line:
             new_lines.append('')
-            new_lines.append(f'# Random seed for run {run_number}')
+            new_lines.append(f'# Random seed configuration - Run {run_number}')
             new_lines.append('set rng [new RNG]')
             new_lines.append(f'$rng seed {seed}')
+            new_lines.append('set defaultRNG $rng')
+            new_lines.append('')
+            new_lines.append('# Additional RNG for packet drops')
             new_lines.append('set rng2 [new RNG]')
             new_lines.append(f'$rng2 seed {seed + 111}')
+            new_lines.append('')
+            new_lines.append('# Set random seed for ns-random')
+            new_lines.append(f'ns-random {seed}')
         
         # 修改FTP启动时间,添加随机抖动
-        if '$ns at 0.0 "$myftp1 start"' in line or '$ns at 0.0 "$myftp2 start"' in line:
-            # 添加0-0.1秒的随机抖动
-            jitter = random.uniform(0, 0.1)
-            new_line = line.replace('0.0', f'{jitter:.6f}')
-            new_lines[-1] = new_line
+        if '$ns at 0.0 "$myftp1 start"' in line:
+            new_lines[-1] = f'$ns at {jitter1:.6f} "$myftp1 start"'
+        elif '$ns at 0.0 "$myftp2 start"' in line:
+            new_lines[-1] = f'$ns at {jitter2:.6f} "$myftp2 start"'
     
     # 写入新文件
     with open(output_file, 'w') as f:
@@ -57,6 +68,8 @@ def modify_tcl_for_run(input_file, output_file, trace_file, nam_file, run_number
     
     print(f"  创建配置文件: {output_file}")
     print(f"  随机种子: {seed}")
+    print(f"  FTP1启动抖动: {jitter1:.3f}秒")
+    print(f"  FTP2启动抖动: {jitter2:.3f}秒")
     print(f"  输出trace: {trace_file}")
 
 def run_ns2_simulation(tcl_file):

@@ -97,8 +97,13 @@ for run_idx in {1..5}; do
     # 计算不同的随机种子
     seed=$((run_idx * 12345 + 6789))
     
-    # 使用awk创建修改后的TCL文件,添加正确的随机种子语法
-    awk -v seed="$seed" -v trace="$trace_output" -v nam="$nam_output" '
+    # 计算启动时间抖动 (0到0.5秒的随机延迟)
+    jitter1=$(awk -v seed=$seed 'BEGIN{srand(seed); print rand() * 0.5}')
+    jitter2=$(awk -v seed=$((seed+999)) 'BEGIN{srand(seed+999); print rand() * 0.5}')
+    
+    # 使用awk创建修改后的TCL文件,添加随机种子和启动时间抖动
+    awk -v seed="$seed" -v trace="$trace_output" -v nam="$nam_output" \
+        -v jitter1="$jitter1" -v jitter2="$jitter2" '
     {
         # 修改trace文件名
         if ($0 ~ /set tracefile1 \[open.*\.tr w\]/) {
@@ -114,17 +119,35 @@ for run_idx in {1..5}; do
         if ($0 ~ /set ns \[new Simulator\]/) {
             print $0
             print ""
-            print "# Random seed configuration for reproducibility test"
+            print "# Random seed configuration - Run with different seed"
             print "set rng [new RNG]"
             print "$rng seed " seed
+            print "set defaultRNG $rng"
+            print ""
+            print "# Additional RNG for packet drops"
             print "set rng2 [new RNG]"
             print "$rng2 seed " (seed + 111)
+            print ""
+            print "# Set random seed for ns-random"
+            print "ns-random " seed
+            next
+        }
+        # 修改FTP1启动时间,添加随机抖动
+        if ($0 ~ /\$ns at 0\.0 "\$myftp1 start"/) {
+            print "$ns at " jitter1 " \"$myftp1 start\""
+            next
+        }
+        # 修改FTP2启动时间,添加随机抖动
+        if ($0 ~ /\$ns at 0\.0 "\$myftp2 start"/) {
+            print "$ns at " jitter2 " \"$myftp2 start\""
             next
         }
         print $0
     }' "${variant}Code.tcl" > "$temp_file"
     
     echo "  随机种子: $seed"
+    echo "  FTP1启动时间抖动: $jitter1 秒"
+    echo "  FTP2启动时间抖动: $jitter2 秒"
     echo "  输出文件: $trace_output"
     
     # 运行仿真

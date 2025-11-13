@@ -2,7 +2,7 @@
 # 快速生成5次Reno运行的脚本
 
 echo "=========================================="
-echo "快速生成 Reno 的 5 次运行"
+echo "快速生成 Cubic 的 5 次运行"
 echo "=========================================="
 
 # 获取脚本所在目录
@@ -12,15 +12,15 @@ cd "$SCRIPT_DIR"
 echo "当前目录: $(pwd)"
 echo ""
 
-# 检查renoCode.tcl是否存在
-if [ ! -f "renoCode.tcl" ]; then
-    echo "错误: 找不到 renoCode.tcl"
+# 检查cubicCode.tcl是否存在
+if [ ! -f "cubicCode.tcl" ]; then
+    echo "错误: 找不到 cubicCode.tcl"
     exit 1
 fi
 
 # 删除旧文件
 echo "清理旧文件..."
-rm -f renoTrace_run*.tr reno_run*.nam renoCode_run*.tcl
+rm -f cubicTrace_run*.tr cubic_run*.nam cubicCode_run*.tcl
 
 echo ""
 echo "开始生成 5 次运行..."
@@ -30,9 +30,9 @@ for run_idx in {1..5}; do
     echo ""
     echo "=== 运行 $run_idx/5 ==="
     
-    temp_file="renoCode_run${run_idx}.tcl"
-    trace_output="renoTrace_run${run_idx}.tr"
-    nam_output="reno_run${run_idx}.nam"
+    temp_file="cubicCode_run${run_idx}.tcl"
+    trace_output="cubicTrace_run${run_idx}.tr"
+    nam_output="cubic_run${run_idx}.nam"
     
     # 计算随机种子
     seed=$((run_idx * 12345 + 6789))
@@ -87,7 +87,7 @@ for run_idx in {1..5}; do
             next
         }
         print $0
-    }' renoCode.tcl > "$temp_file"
+    }' cubicCode.tcl > "$temp_file"
     
     echo ""
     echo "生成的TCL文件: $temp_file"
@@ -123,27 +123,27 @@ echo ""
 
 # 列出所有生成的文件
 echo "生成的trace文件:"
-ls -lh renoTrace_run*.tr 2>/dev/null | awk '{print "  " $9 " - " $5}'
+ls -lh cubicTrace_run*.tr 2>/dev/null | awk '{print "  " $9 " - " $5}'
 
 echo ""
 echo "文件大小对比:"
 for i in {1..5}; do
-    if [ -f "renoTrace_run$i.tr" ]; then
-        size=$(stat -f%z "renoTrace_run$i.tr" 2>/dev/null || stat -c%s "renoTrace_run$i.tr" 2>/dev/null)
+    if [ -f "cubicTrace_run$i.tr" ]; then
+        size=$(stat -f%z "cubicTrace_run$i.tr" 2>/dev/null || stat -c%s "cubicTrace_run$i.tr" 2>/dev/null)
         echo "  Run $i: $size bytes"
     fi
 done
 
 echo ""
 echo "检查第一个临时TCL文件 (用于验证配置):"
-if [ -f "renoCode_run1.tcl" ]; then
-    echo "  文件: renoCode_run1.tcl"
+if [ -f "cubicCode_run1.tcl" ]; then
+    echo "  文件: cubicCode_run1.tcl"
     echo ""
     echo "  随机种子部分:"
-    grep -A 10 "Random seed" renoCode_run1.tcl | head -12
+    grep -A 10 "Random seed" cubicCode_run1.tcl | head -12
     echo ""
     echo "  启动时间部分:"
-    grep "myftp.*start" renoCode_run1.tcl
+    grep "myftp.*start" cubicCode_run1.tcl
 fi
 
 echo ""

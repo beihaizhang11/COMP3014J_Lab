@@ -85,10 +85,10 @@ def run_ns2_simulation(tcl_file):
 
 def main():
     print("=" * 60)
-    print("生成5次可重复性测试运行 (Reno)")
+    print("生成5次可重复性测试运行 (Cubic)")
     print("=" * 60)
     
-    variant = 'reno'
+    variant = 'cubic'
     num_runs = 5
     
     # 切换到脚本目录

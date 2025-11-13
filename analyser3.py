@@ -626,9 +626,29 @@ def run_part_c():
     print("-" * 60)
     print(f"{'指标':<20} {'均值':<15} {'标准差':<15} {'95% CI':<15}")
     print("-" * 60)
-    print(f"{'吞吐量 (Mbps)':<20} {goodput_mean:<15.2f} {goodput_std:<15.2f} ±{goodput_ci:<15.2f}")
+    print(f"{'吞吐量 (Mbps)':<20} {goodput_mean:<15.3f} {goodput_std:<15.3f} ±{goodput_ci:<15.3f}")
     print(f"{'PLR (%)':<20} {plr_mean:<15.4f} {plr_std:<15.4f} ±{plr_ci:<15.4f}")
     print("-" * 60)
+    
+    # 打印每次运行的详细数据
+    print(f"\n详细数据 ({num_runs}次运行):")
+    print("-" * 80)
+    print(f"{'运行':<10} {'Goodput (Mbps)':<20} {'PLR (%)':<20} {'差异':<20}")
+    print("-" * 80)
+    for i in range(num_runs):
+        goodput_diff = goodputs[i] - goodput_mean
+        plr_diff = plrs[i] - plr_mean
+        print(f"Run {i+1:<5} {goodputs[i]:<20.4f} {plrs[i]:<20.4f} "
+              f"G:{goodput_diff:+.4f} P:{plr_diff:+.4f}")
+    print("-" * 80)
+    
+    # 计算变化范围
+    goodput_range = max(goodputs) - min(goodputs)
+    plr_range = max(plrs) - min(plrs)
+    
+    print(f"\n变化范围:")
+    print(f"  Goodput: {min(goodputs):.4f} - {max(goodputs):.4f} Mbps (范围: {goodput_range:.4f})")
+    print(f"  PLR: {min(plrs):.4f} - {max(plrs):.4f}% (范围: {plr_range:.4f})")
     
     # Plot detailed charts showing all 5 runs + mean with error bars
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
@@ -638,7 +658,7 @@ def run_part_c():
     bars1 = axes[0, 0].bar(x_pos, goodputs, color='#1f77b4', alpha=0.7, 
                            edgecolor='black', linewidth=1.5, width=0.6)
     axes[0, 0].axhline(y=goodput_mean, color='red', linestyle='--', 
-                       linewidth=2.5, label=f'Mean: {goodput_mean:.2f} Mbps')
+                       linewidth=2.5, label=f'Mean: {goodput_mean:.3f} Mbps')
     axes[0, 0].fill_between([-0.5, len(goodputs)-0.5], 
                             goodput_mean - goodput_ci, 
                             goodput_mean + goodput_ci,
@@ -653,11 +673,20 @@ def run_part_c():
     axes[0, 0].grid(axis='y', alpha=0.3, linestyle='--')
     axes[0, 0].set_axisbelow(True)
     
-    # Add value labels
+    # 动态调整Y轴范围,突出差异
+    if len(goodputs) > 0 and max(goodputs) > 0:
+        y_range = max(goodputs) - min(goodputs)
+        if y_range < goodput_mean * 0.1:  # 如果差异小于均值的10%
+            # 放大Y轴范围以突出差异
+            y_center = goodput_mean
+            y_span = max(goodput_std * 6, goodput_mean * 0.05)  # 至少显示均值5%的范围
+            axes[0, 0].set_ylim([y_center - y_span, y_center + y_span])
+    
+    # Add value labels with more precision
     for i, (bar, val) in enumerate(zip(bars1, goodputs)):
         height = bar.get_height()
         axes[0, 0].text(bar.get_x() + bar.get_width()/2., height,
-                       f'{val:.1f}',
+                       f'{val:.3f}',
                        ha='center', va='bottom', fontsize=10, fontweight='bold')
     
     # Subplot 2: Goodput - Mean with 95% CI error bars
@@ -696,11 +725,20 @@ def run_part_c():
     axes[1, 0].grid(axis='y', alpha=0.3, linestyle='--')
     axes[1, 0].set_axisbelow(True)
     
-    # Add value labels
+    # 动态调整Y轴范围,突出差异
+    if len(plrs) > 0 and max(plrs) > 0:
+        y_range = max(plrs) - min(plrs)
+        if y_range < plr_mean * 0.1:  # 如果差异小于均值的10%
+            # 放大Y轴范围以突出差异
+            y_center = plr_mean
+            y_span = max(plr_std * 6, plr_mean * 0.05)  # 至少显示均值5%的范围
+            axes[1, 0].set_ylim([y_center - y_span, y_center + y_span])
+    
+    # Add value labels with more precision
     for i, (bar, val) in enumerate(zip(bars3, plrs)):
         height = bar.get_height()
         axes[1, 0].text(bar.get_x() + bar.get_width()/2., height,
-                       f'{val:.3f}',
+                       f'{val:.4f}',
                        ha='center', va='bottom', fontsize=10, fontweight='bold')
     
     # Subplot 4: PLR - Mean with 95% CI error bars

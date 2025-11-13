@@ -47,7 +47,6 @@ def modify_tcl_for_run(input_file, output_file, trace_file, nam_file, run_number
             new_lines.append(f'# Random seed configuration - Run {run_number}')
             new_lines.append('set rng [new RNG]')
             new_lines.append(f'$rng seed {seed}')
-            new_lines.append('set defaultRNG $rng')
             new_lines.append('')
             new_lines.append('# Additional RNG for packet drops')
             new_lines.append('set rng2 [new RNG]')

@@ -122,7 +122,6 @@ for run_idx in {1..5}; do
             print "# Random seed configuration - Run with different seed"
             print "set rng [new RNG]"
             print "$rng seed " seed
-            print "set defaultRNG $rng"
             print ""
             print "# Additional RNG for packet drops"
             print "set rng2 [new RNG]"

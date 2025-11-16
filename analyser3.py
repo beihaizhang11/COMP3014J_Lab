@@ -549,6 +549,36 @@ def run_part_b():
     plt.close()
     print(f"\n图表已保存: {img_path}")
     
+    # 保存Part B的CSV数据
+    csv_path = 'partB_droptail_vs_red.csv'
+    if os.path.exists('comp3014j'):
+        csv_path = 'comp3014j/partB_droptail_vs_red.csv'
+    
+    with open(csv_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['Variant', 'Queue', 'Goodput (Mbps)', 'PLR (%)', 'Fairness Index', 'Stability (CoV)'])
+        for variant in variants:
+            # DropTail
+            writer.writerow([
+                variant,
+                'DropTail',
+                f"{droptail_results[variant]['goodput']:.2f}",
+                f"{droptail_results[variant]['plr']:.4f}",
+                f"{droptail_results[variant]['fairness']:.4f}",
+                f"{droptail_results[variant]['cov']:.4f}"
+            ])
+            # RED
+            writer.writerow([
+                variant,
+                'RED',
+                f"{red_results[variant]['goodput']:.2f}",
+                f"{red_results[variant]['plr']:.4f}",
+                f"{red_results[variant]['fairness']:.4f}",
+                f"{red_results[variant]['cov']:.4f}"
+            ])
+    
+    print(f"CSV已保存: {csv_path}")
+    
     # 分析和解释
     print("\n解释:")
     print(f"DropTail和RED在性能上的主要差异体现在包丢失模式和队列管理策略上。")
@@ -730,6 +760,74 @@ def run_part_c():
     plt.savefig(img_path, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"\n图表已保存: {img_path}")
+    
+    # 保存Part C的CSV数据
+    csv_path = 'partC_reproducibility.csv'
+    if os.path.exists('comp3014j'):
+        csv_path = 'comp3014j/partC_reproducibility.csv'
+    
+    with open(csv_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        # 写入表头
+        writer.writerow(['Run', 'Goodput (Mbps)', 'PLR (%)', 'Fairness Index', 'Stability (CoV)'])
+        
+        # 写入每次运行的数据
+        for i in range(num_runs):
+            writer.writerow([
+                f'Run {i+1}',
+                f"{goodputs[i]:.4f}",
+                f"{plrs[i]:.4f}",
+                f"{fairness_values[i]:.4f}",
+                f"{cov_values[i]:.4f}"
+            ])
+        
+        # 写入统计数据
+        writer.writerow([])  # 空行
+        writer.writerow(['Statistic', 'Goodput (Mbps)', 'PLR (%)', 'Fairness Index', 'Stability (CoV)'])
+        writer.writerow([
+            'Mean',
+            f"{goodput_mean:.4f}",
+            f"{plr_mean:.4f}",
+            f"{fairness_mean:.4f}",
+            f"{cov_mean:.4f}"
+        ])
+        writer.writerow([
+            'Std Dev',
+            f"{goodput_std:.4f}",
+            f"{plr_std:.4f}",
+            f"{fairness_std:.4f}",
+            f"{cov_std:.4f}"
+        ])
+        writer.writerow([
+            '95% CI',
+            f"±{goodput_ci:.4f}",
+            f"±{plr_ci:.4f}",
+            f"±{fairness_ci:.4f}",
+            f"±{cov_ci:.4f}"
+        ])
+        writer.writerow([
+            'Min',
+            f"{min(goodputs):.4f}",
+            f"{min(plrs):.4f}",
+            f"{min(fairness_values):.4f}",
+            f"{min(cov_values):.4f}"
+        ])
+        writer.writerow([
+            'Max',
+            f"{max(goodputs):.4f}",
+            f"{max(plrs):.4f}",
+            f"{max(fairness_values):.4f}",
+            f"{max(cov_values):.4f}"
+        ])
+        writer.writerow([
+            'Range',
+            f"{max(goodputs) - min(goodputs):.4f}",
+            f"{max(plrs) - min(plrs):.4f}",
+            f"{max(fairness_values) - min(fairness_values):.4f}",
+            f"{max(cov_values) - min(cov_values):.4f}"
+        ])
+    
+    print(f"CSV已保存: {csv_path}")
 
 
 def main():
@@ -751,10 +849,14 @@ def main():
     print("分析完成!")
     print("=" * 60)
     print("\n生成的文件:")
-    print("  - partA_goodput_plr.csv")
-    print("  - partA_comparison.png")
-    print("  - partB_comparison.png")
-    print("  - partC_reproducibility.png")
+    print("\n  CSV数据文件:")
+    print("    - partA_goodput_plr.csv         (Part A数据)")
+    print("    - partB_droptail_vs_red.csv     (Part B数据)")
+    print("    - partC_reproducibility.csv     (Part C数据)")
+    print("\n  图表文件:")
+    print("    - partA_comparison.png          (Part A: 4个子图)")
+    print("    - partB_comparison.png          (Part B: 4个子图)")
+    print("    - partC_reproducibility.png     (Part C: 4个子图)")
     print("=" * 60)
 
 

@@ -579,7 +579,7 @@ def run_part_c():
     print("  运行5: cubicTrace_run5.tr")
     
     # 检查是否有多次运行的文件
-    variant = 'cubic'  # 选择cubic作为示例
+    variant = 'yeah'  # 选择yeah作为示例
     num_runs = 5
     
     goodputs = []
@@ -650,115 +650,79 @@ def run_part_c():
     print(f"  Goodput: {min(goodputs):.4f} - {max(goodputs):.4f} Mbps (范围: {goodput_range:.4f})")
     print(f"  PLR: {min(plrs):.4f} - {max(plrs):.4f}% (范围: {plr_range:.4f})")
     
-    # Plot detailed charts showing all 5 runs + mean with error bars
+    # 计算所有指标的统计量
+    fairness_mean = np.mean(fairness_values)
+    fairness_std = np.std(fairness_values)
+    fairness_ci = 1.96 * fairness_std
+    
+    cov_mean = np.mean(cov_values)
+    cov_std = np.std(cov_values)
+    cov_ci = 1.96 * cov_std
+    
+    # Plot 4 metrics: Goodput, PLR, Fairness, Stability (CoV)
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
     
-    # Subplot 1: Goodput - Individual runs with mean line
-    x_pos = np.arange(len(goodputs))
-    bars1 = axes[0, 0].bar(x_pos, goodputs, color='#1f77b4', alpha=0.7, 
-                           edgecolor='black', linewidth=1.5, width=0.6)
-    axes[0, 0].axhline(y=goodput_mean, color='red', linestyle='--', 
-                       linewidth=2.5, label=f'Mean: {goodput_mean:.3f} Mbps')
-    axes[0, 0].fill_between([-0.5, len(goodputs)-0.5], 
-                            goodput_mean - goodput_ci, 
-                            goodput_mean + goodput_ci,
-                            alpha=0.2, color='red', label='95% CI')
-    axes[0, 0].set_ylabel('Goodput (Mbps)', fontsize=13, fontweight='bold')
-    axes[0, 0].set_xlabel('Run Number', fontsize=13, fontweight='bold')
-    axes[0, 0].set_title(f'{variant.upper()} - Goodput Across 5 Runs', 
-                        fontsize=14, fontweight='bold')
-    axes[0, 0].set_xticks(x_pos)
-    axes[0, 0].set_xticklabels([f'Run {i+1}' for i in range(len(goodputs))], fontsize=11)
-    axes[0, 0].legend(loc='best', fontsize=11)
-    axes[0, 0].grid(axis='y', alpha=0.3, linestyle='--')
-    axes[0, 0].set_axisbelow(True)
+    # 准备所有4个指标的数据
+    x_pos = np.arange(num_runs)
+    all_data = [goodputs, plrs, fairness_values, cov_values]
+    all_means = [goodput_mean, plr_mean, fairness_mean, cov_mean]
+    all_cis = [goodput_ci, plr_ci, fairness_ci, cov_ci]
+    all_stds = [goodput_std, plr_std, fairness_std, cov_std]
     
-    # 动态调整Y轴范围,突出差异
-    if len(goodputs) > 0 and max(goodputs) > 0:
-        y_range = max(goodputs) - min(goodputs)
-        if y_range < goodput_mean * 0.1:  # 如果差异小于均值的10%
-            # 放大Y轴范围以突出差异
-            y_center = goodput_mean
-            y_span = max(goodput_std * 6, goodput_mean * 0.05)  # 至少显示均值5%的范围
-            axes[0, 0].set_ylim([y_center - y_span, y_center + y_span])
+    titles = ['Goodput', 'Packet Loss Rate', 'Fairness Index (Jain)', 'Stability (CoV)']
+    ylabels = ['Goodput (Mbps)', 'PLR (%)', 'Fairness Index', 'CoV']
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+    formats = ['{:.3f}', '{:.4f}', '{:.4f}', '{:.4f}']
     
-    # Add value labels with more precision
-    for i, (bar, val) in enumerate(zip(bars1, goodputs)):
-        height = bar.get_height()
-        axes[0, 0].text(bar.get_x() + bar.get_width()/2., height,
-                       f'{val:.3f}',
-                       ha='center', va='bottom', fontsize=10, fontweight='bold')
+    for idx in range(4):
+        row = idx // 2
+        col = idx % 2
+        ax = axes[row, col]
+        
+        data = all_data[idx]
+        mean = all_means[idx]
+        ci = all_cis[idx]
+        std = all_stds[idx]
+        
+        # 绘制5次运行的柱状图
+        bars = ax.bar(x_pos, data, color=colors[idx], alpha=0.7, 
+                     edgecolor='black', linewidth=1.5, width=0.6)
+        
+        # 绘制均值线
+        ax.axhline(y=mean, color='red', linestyle='--', 
+                  linewidth=2.5, label=f'Mean: {formats[idx].format(mean)}')
+        
+        # 绘制95% CI区域
+        ax.fill_between([-0.5, num_runs - 0.5], 
+                       mean - ci, mean + ci,
+                       alpha=0.2, color='red', label=f'95% CI: ±{formats[idx].format(ci)}')
+        
+        ax.set_ylabel(ylabels[idx], fontsize=13, fontweight='bold')
+        ax.set_xlabel('Run Number', fontsize=13, fontweight='bold')
+        ax.set_title(f'{variant.upper()} - {titles[idx]} (5 Runs)', 
+                    fontsize=14, fontweight='bold')
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels([f'Run {i+1}' for i in range(num_runs)], fontsize=11)
+        ax.legend(loc='best', fontsize=10)
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.set_axisbelow(True)
+        
+        # 动态调整Y轴范围以突出差异
+        if len(data) > 0 and max(data) > 0:
+            y_range = max(data) - min(data)
+            if y_range < mean * 0.1:  # 如果差异小于均值的10%
+                y_center = mean
+                y_span = max(std * 6, mean * 0.08)  # 显示均值8%的范围
+                ax.set_ylim([max(0, y_center - y_span), y_center + y_span])
+        
+        # 添加数值标签
+        for i, (bar, val) in enumerate(zip(bars, data)):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                   formats[idx].format(val),
+                   ha='center', va='bottom', fontsize=9, fontweight='bold')
     
-    # Subplot 2: Goodput - Mean with 95% CI error bars
-    axes[0, 1].bar(['Mean Goodput'], [goodput_mean], yerr=[goodput_ci], 
-                   color='#1f77b4', alpha=0.8, edgecolor='black', 
-                   linewidth=2, capsize=20, error_kw={'linewidth': 3, 'capthick': 3},
-                   width=0.4)
-    axes[0, 1].set_ylabel('Goodput (Mbps)', fontsize=13, fontweight='bold')
-    axes[0, 1].set_title(f'{variant.upper()} - Mean Goodput ± 95% CI', 
-                        fontsize=14, fontweight='bold')
-    axes[0, 1].grid(axis='y', alpha=0.3, linestyle='--')
-    axes[0, 1].set_axisbelow(True)
-    
-    # Add detailed statistics
-    stats_text = f'Mean: {goodput_mean:.2f}\nStd: {goodput_std:.2f}\n95% CI: ±{goodput_ci:.2f}'
-    axes[0, 1].text(0.5, 0.95, stats_text, transform=axes[0, 1].transAxes,
-                   fontsize=11, verticalalignment='top', horizontalalignment='center',
-                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-    
-    # Subplot 3: PLR - Individual runs with mean line
-    bars3 = axes[1, 0].bar(x_pos, plrs, color='#ff7f0e', alpha=0.7, 
-                           edgecolor='black', linewidth=1.5, width=0.6)
-    axes[1, 0].axhline(y=plr_mean, color='red', linestyle='--', 
-                       linewidth=2.5, label=f'Mean: {plr_mean:.4f}%')
-    axes[1, 0].fill_between([-0.5, len(plrs)-0.5], 
-                            plr_mean - plr_ci, 
-                            plr_mean + plr_ci,
-                            alpha=0.2, color='red', label='95% CI')
-    axes[1, 0].set_ylabel('Packet Loss Rate (%)', fontsize=13, fontweight='bold')
-    axes[1, 0].set_xlabel('Run Number', fontsize=13, fontweight='bold')
-    axes[1, 0].set_title(f'{variant.upper()} - PLR Across 5 Runs', 
-                        fontsize=14, fontweight='bold')
-    axes[1, 0].set_xticks(x_pos)
-    axes[1, 0].set_xticklabels([f'Run {i+1}' for i in range(len(plrs))], fontsize=11)
-    axes[1, 0].legend(loc='best', fontsize=11)
-    axes[1, 0].grid(axis='y', alpha=0.3, linestyle='--')
-    axes[1, 0].set_axisbelow(True)
-    
-    # 动态调整Y轴范围,突出差异
-    if len(plrs) > 0 and max(plrs) > 0:
-        y_range = max(plrs) - min(plrs)
-        if y_range < plr_mean * 0.1:  # 如果差异小于均值的10%
-            # 放大Y轴范围以突出差异
-            y_center = plr_mean
-            y_span = max(plr_std * 6, plr_mean * 0.05)  # 至少显示均值5%的范围
-            axes[1, 0].set_ylim([y_center - y_span, y_center + y_span])
-    
-    # Add value labels with more precision
-    for i, (bar, val) in enumerate(zip(bars3, plrs)):
-        height = bar.get_height()
-        axes[1, 0].text(bar.get_x() + bar.get_width()/2., height,
-                       f'{val:.4f}',
-                       ha='center', va='bottom', fontsize=10, fontweight='bold')
-    
-    # Subplot 4: PLR - Mean with 95% CI error bars
-    axes[1, 1].bar(['Mean PLR'], [plr_mean], yerr=[plr_ci], 
-                   color='#ff7f0e', alpha=0.8, edgecolor='black', 
-                   linewidth=2, capsize=20, error_kw={'linewidth': 3, 'capthick': 3},
-                   width=0.4)
-    axes[1, 1].set_ylabel('Packet Loss Rate (%)', fontsize=13, fontweight='bold')
-    axes[1, 1].set_title(f'{variant.upper()} - Mean PLR ± 95% CI', 
-                        fontsize=14, fontweight='bold')
-    axes[1, 1].grid(axis='y', alpha=0.3, linestyle='--')
-    axes[1, 1].set_axisbelow(True)
-    
-    # Add detailed statistics
-    stats_text = f'Mean: {plr_mean:.4f}\nStd: {plr_std:.4f}\n95% CI: ±{plr_ci:.4f}'
-    axes[1, 1].text(0.5, 0.95, stats_text, transform=axes[1, 1].transAxes,
-                   fontsize=11, verticalalignment='top', horizontalalignment='center',
-                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-    
-    plt.tight_layout(pad=3.0)
+    plt.tight_layout(pad=2.0)
     
     img_path = 'partC_reproducibility.png'
     if os.path.exists('comp3014j'):

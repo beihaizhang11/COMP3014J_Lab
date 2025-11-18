@@ -556,57 +556,46 @@ def run_part_b():
     norm_dt_covs = normalize_metric(all_covs, lower_is_better=True)[:len(variants)]
     norm_red_covs = normalize_metric(all_covs, lower_is_better=True)[len(variants):]
     
-    # 绘制堆叠柱状图 (1行2列)
-    fig, axes = plt.subplots(1, 2, figsize=(18, 8))
+    # 绘制单张图,包含8个堆叠柱状图 (DropTail和RED并列)
+    fig, ax = plt.subplots(1, 1, figsize=(16, 8))
     
-    # 子图1: DropTail
-    ax1 = axes[0]
-    x = np.arange(len(variants))
-    width = 0.6
+    # 准备8个柱子的位置: DropTail-reno, DropTail-cubic, ..., RED-reno, RED-cubic, ...
+    x = np.arange(len(variants) * 2)
+    width = 0.7
     
-    # 堆叠柱状图
-    p1 = ax1.bar(x, norm_dt_goodputs, width, label='Goodput (Normalized)', 
+    # 组合DropTail和RED的数据
+    combined_goodputs = norm_dt_goodputs + norm_red_goodputs
+    combined_plrs = norm_dt_plrs + norm_red_plrs
+    combined_fairness = norm_dt_fairness + norm_red_fairness
+    combined_covs = norm_dt_covs + norm_red_covs
+    
+    # 绘制堆叠柱状图
+    p1 = ax.bar(x, combined_goodputs, width, label='Goodput (Mbps)', 
                 color='#1f77b4', edgecolor='black', linewidth=1.2)
-    p2 = ax1.bar(x, norm_dt_plrs, width, bottom=norm_dt_goodputs,
-                label='PLR (Normalized, Inverted)', color='#ff7f0e', edgecolor='black', linewidth=1.2)
-    p3 = ax1.bar(x, norm_dt_fairness, width, 
-                bottom=[i+j for i,j in zip(norm_dt_goodputs, norm_dt_plrs)],
-                label='Fairness (Normalized)', color='#ffd700', edgecolor='black', linewidth=1.2)
-    p4 = ax1.bar(x, norm_dt_covs, width,
-                bottom=[i+j+k for i,j,k in zip(norm_dt_goodputs, norm_dt_plrs, norm_dt_fairness)],
-                label='Stability (Normalized, Inverted)', color='#2ca02c', edgecolor='black', linewidth=1.2)
+    p2 = ax.bar(x, combined_plrs, width, bottom=combined_goodputs,
+                label='PLR (%)', color='#ff7f0e', edgecolor='black', linewidth=1.2)
+    p3 = ax.bar(x, combined_fairness, width, 
+                bottom=[i+j for i,j in zip(combined_goodputs, combined_plrs)],
+                label='Fairness (JFI)', color='#ffd700', edgecolor='black', linewidth=1.2)
+    p4 = ax.bar(x, combined_covs, width,
+                bottom=[i+j+k for i,j,k in zip(combined_goodputs, combined_plrs, combined_fairness)],
+                label='Stability (CoV)', color='#2ca02c', edgecolor='black', linewidth=1.2)
     
-    ax1.set_ylabel('Normalized Score (0-1)', fontsize=13, fontweight='bold')
-    ax1.set_xlabel('TCP Variants', fontsize=13, fontweight='bold')
-    ax1.set_title('DropTail Queue Performance', fontsize=15, fontweight='bold')
-    ax1.set_xticks(x)
-    ax1.set_xticklabels(variants, fontsize=12)
-    ax1.legend(loc='upper left', fontsize=10)
-    ax1.grid(axis='y', alpha=0.3, linestyle='--')
-    ax1.set_axisbelow(True)
+    ax.set_ylabel('Normalized Score', fontsize=13, fontweight='bold')
+    ax.set_xlabel('Queue Type - TCP Variant', fontsize=13, fontweight='bold')
+    ax.set_title('PartB_Queue_Comparison (1000 Mbps)', fontsize=15, fontweight='bold')
+    ax.set_xticks(x)
     
-    # 子图2: RED
-    ax2 = axes[1]
+    # 设置x轴标签
+    labels = []
+    for queue in ['DropTail', 'RED']:
+        for variant in variants:
+            labels.append(f'{queue} - {variant}')
+    ax.set_xticklabels(labels, fontsize=10, rotation=15, ha='right')
     
-    p1 = ax2.bar(x, norm_red_goodputs, width, label='Goodput (Normalized)', 
-                color='#1f77b4', edgecolor='black', linewidth=1.2)
-    p2 = ax2.bar(x, norm_red_plrs, width, bottom=norm_red_goodputs,
-                label='PLR (Normalized, Inverted)', color='#ff7f0e', edgecolor='black', linewidth=1.2)
-    p3 = ax2.bar(x, norm_red_fairness, width,
-                bottom=[i+j for i,j in zip(norm_red_goodputs, norm_red_plrs)],
-                label='Fairness (Normalized)', color='#ffd700', edgecolor='black', linewidth=1.2)
-    p4 = ax2.bar(x, norm_red_covs, width,
-                bottom=[i+j+k for i,j,k in zip(norm_red_goodputs, norm_red_plrs, norm_red_fairness)],
-                label='Stability (Normalized, Inverted)', color='#2ca02c', edgecolor='black', linewidth=1.2)
-    
-    ax2.set_ylabel('Normalized Score (0-1)', fontsize=13, fontweight='bold')
-    ax2.set_xlabel('TCP Variants', fontsize=13, fontweight='bold')
-    ax2.set_title('RED Queue Performance', fontsize=15, fontweight='bold')
-    ax2.set_xticks(x)
-    ax2.set_xticklabels(variants, fontsize=12)
-    ax2.legend(loc='upper left', fontsize=10)
-    ax2.grid(axis='y', alpha=0.3, linestyle='--')
-    ax2.set_axisbelow(True)
+    ax.legend(loc='upper left', fontsize=11)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    ax.set_axisbelow(True)
     
     plt.tight_layout(pad=2.0)
     
@@ -646,6 +635,140 @@ def run_part_b():
             ])
     
     print(f"CSV已保存: {csv_path}")
+    
+    # Part B.2: 敏感性分析 - 500 Mbps容量
+    print("\n" + "=" * 80)
+    print("Part B.2: 敏感性分析 (500 Mbps 瓶颈带宽)")
+    print("=" * 80)
+    
+    # 检查是否有500 Mbps的trace文件
+    droptail_500_available = True
+    red_500_available = True
+    
+    for variant in variants:
+        dt_file = f'{variant}Trace_500.tr'
+        red_file = f'{variant}Trace_red_500.tr'
+        
+        if not os.path.exists(dt_file):
+            dt_file = f'comp3014j/{variant}Trace_500.tr'
+        if not os.path.exists(red_file):
+            red_file = f'comp3014j/{variant}Trace_red_500.tr'
+        
+        if not os.path.exists(dt_file):
+            droptail_500_available = False
+        if not os.path.exists(red_file):
+            red_500_available = False
+    
+    if droptail_500_available and red_500_available:
+        print("\n检测到500 Mbps trace文件,生成敏感性分析图表...")
+        
+        # 解析500 Mbps的trace文件
+        droptail_500_results = {}
+        red_500_results = {}
+        
+        for variant in variants:
+            # DropTail 500
+            trace_file = f'{variant}Trace_500.tr'
+            if not os.path.exists(trace_file):
+                trace_file = f'comp3014j/{variant}Trace_500.tr'
+            
+            print(f"处理 {variant.upper()} (DropTail 500Mbps)...")
+            analyzer = TCPAnalyzer(trace_file, variant)
+            analyzer.parse_trace()
+            droptail_500_results[variant] = {
+                'goodput': analyzer.get_total_goodput(),
+                'plr': analyzer.get_plr(),
+                'fairness': analyzer.get_fairness_index(),
+                'cov': analyzer.get_stability_cov()
+            }
+            
+            # RED 500
+            trace_file = f'{variant}Trace_red_500.tr'
+            if not os.path.exists(trace_file):
+                trace_file = f'comp3014j/{variant}Trace_red_500.tr'
+            
+            print(f"处理 {variant.upper()} (RED 500Mbps)...")
+            analyzer = TCPAnalyzer(trace_file, variant)
+            analyzer.parse_trace()
+            red_500_results[variant] = {
+                'goodput': analyzer.get_total_goodput(),
+                'plr': analyzer.get_plr(),
+                'fairness': analyzer.get_fairness_index(),
+                'cov': analyzer.get_stability_cov()
+            }
+        
+        # 归一化500 Mbps的数据
+        dt_500_goodputs = [droptail_500_results[v]['goodput'] for v in variants]
+        dt_500_plrs = [droptail_500_results[v]['plr'] for v in variants]
+        dt_500_fairness = [droptail_500_results[v]['fairness'] for v in variants]
+        dt_500_covs = [droptail_500_results[v]['cov'] for v in variants]
+        
+        red_500_goodputs = [red_500_results[v]['goodput'] for v in variants]
+        red_500_plrs = [red_500_results[v]['plr'] for v in variants]
+        red_500_fairness = [red_500_results[v]['fairness'] for v in variants]
+        red_500_covs = [red_500_results[v]['cov'] for v in variants]
+        
+        # 合并数据进行归一化
+        all_500_goodputs = dt_500_goodputs + red_500_goodputs
+        all_500_plrs = dt_500_plrs + red_500_plrs
+        all_500_fairness = dt_500_fairness + red_500_fairness
+        all_500_covs = dt_500_covs + red_500_covs
+        
+        norm_dt_500_goodputs = normalize_metric(all_500_goodputs, lower_is_better=False)[:len(variants)]
+        norm_red_500_goodputs = normalize_metric(all_500_goodputs, lower_is_better=False)[len(variants):]
+        
+        norm_dt_500_plrs = normalize_metric(all_500_plrs, lower_is_better=True)[:len(variants)]
+        norm_red_500_plrs = normalize_metric(all_500_plrs, lower_is_better=True)[len(variants):]
+        
+        norm_dt_500_fairness = normalize_metric(all_500_fairness, lower_is_better=False)[:len(variants)]
+        norm_red_500_fairness = normalize_metric(all_500_fairness, lower_is_better=False)[len(variants):]
+        
+        norm_dt_500_covs = normalize_metric(all_500_covs, lower_is_better=True)[:len(variants)]
+        norm_red_500_covs = normalize_metric(all_500_covs, lower_is_better=True)[len(variants):]
+        
+        # 绘制500 Mbps的图表
+        fig2, ax2 = plt.subplots(1, 1, figsize=(16, 8))
+        
+        # 组合数据
+        combined_500_goodputs = norm_dt_500_goodputs + norm_red_500_goodputs
+        combined_500_plrs = norm_dt_500_plrs + norm_red_500_plrs
+        combined_500_fairness = norm_dt_500_fairness + norm_red_500_fairness
+        combined_500_covs = norm_dt_500_covs + norm_red_500_covs
+        
+        # 绘制堆叠柱状图
+        p1 = ax2.bar(x, combined_500_goodputs, width, label='Goodput (Mbps)', 
+                    color='#1f77b4', edgecolor='black', linewidth=1.2)
+        p2 = ax2.bar(x, combined_500_plrs, width, bottom=combined_500_goodputs,
+                    label='PLR (%)', color='#ff7f0e', edgecolor='black', linewidth=1.2)
+        p3 = ax2.bar(x, combined_500_fairness, width,
+                    bottom=[i+j for i,j in zip(combined_500_goodputs, combined_500_plrs)],
+                    label='Fairness (JFI)', color='#ffd700', edgecolor='black', linewidth=1.2)
+        p4 = ax2.bar(x, combined_500_covs, width,
+                    bottom=[i+j+k for i,j,k in zip(combined_500_goodputs, combined_500_plrs, combined_500_fairness)],
+                    label='Stability (CoV)', color='#2ca02c', edgecolor='black', linewidth=1.2)
+        
+        ax2.set_ylabel('Normalized Score', fontsize=13, fontweight='bold')
+        ax2.set_xlabel('Queue Type - TCP Variant', fontsize=13, fontweight='bold')
+        ax2.set_title('PartB_Queue_Comparison_500 (500 Mbps - High Congestion)', fontsize=15, fontweight='bold')
+        ax2.set_xticks(x)
+        ax2.set_xticklabels(labels, fontsize=10, rotation=15, ha='right')
+        ax2.legend(loc='upper left', fontsize=11)
+        ax2.grid(axis='y', alpha=0.3, linestyle='--')
+        ax2.set_axisbelow(True)
+        
+        plt.tight_layout(pad=2.0)
+        
+        img_path_500 = 'partB_comparison_500.png'
+        if os.path.exists('comp3014j'):
+            img_path_500 = 'comp3014j/partB_comparison_500.png'
+        plt.savefig(img_path_500, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"\n敏感性分析图表已保存: {img_path_500}")
+    else:
+        print("\n警告: 未找到500 Mbps的trace文件")
+        print("请修改TCL文件的瓶颈带宽为500Mbps并重新运行仿真:")
+        print("  $ns duplex-link $n3 $n4 500Mb 50ms DropTail")
+        print("  $ns duplex-link $n3 $n4 500Mb 50ms RED")
     
     # 分析和解释
     print("\n" + "=" * 80)

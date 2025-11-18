@@ -76,6 +76,51 @@ done
 
 echo "RED仿真完成!"
 
+# Part B.2: 敏感性分析 - 500 Mbps容量
+echo ""
+echo "Part B.2: 敏感性分析 (500 Mbps瓶颈带宽)..."
+echo "------------------------------------------"
+
+for variant in reno cubic vegas yeah; do
+    input_file="${variant}Code.tcl"
+    
+    # DropTail 500Mbps
+    output_file_dt="${variant}Code_500.tcl"
+    trace_output_dt="${variant}Trace_500.tr"
+    nam_output_dt="${variant}_500.nam"
+    
+    if [ ! -f "$trace_output_dt" ]; then
+        echo "生成 ${variant} (DropTail 500Mbps)..."
+        sed "s/1000Mb 50ms/500Mb 50ms/g" "$input_file" | \
+        sed "s/${variant}Trace.tr/${trace_output_dt}/g" | \
+        sed "s/${variant}.nam/${nam_output_dt}/g" > "$output_file_dt"
+        
+        ns "$output_file_dt"
+        rm -f "$output_file_dt"
+    else
+        echo "$trace_output_dt 已存在，跳过"
+    fi
+    
+    # RED 500Mbps
+    output_file_red="${variant}Code_red_500.tcl"
+    trace_output_red="${variant}Trace_red_500.tr"
+    nam_output_red="${variant}_red_500.nam"
+    
+    if [ ! -f "$trace_output_red" ]; then
+        echo "生成 ${variant} (RED 500Mbps)..."
+        sed "s/1000Mb 50ms DropTail/500Mb 50ms RED/g" "$input_file" | \
+        sed "s/${variant}Trace.tr/${trace_output_red}/g" | \
+        sed "s/${variant}.nam/${nam_output_red}/g" > "$output_file_red"
+        
+        ns "$output_file_red"
+        rm -f "$output_file_red"
+    else
+        echo "$trace_output_red 已存在，跳过"
+    fi
+done
+
+echo "500 Mbps敏感性测试完成!"
+
 # Part C: 运行多次仿真(可重复性测试)
 echo ""
 echo "Part C: 运行可重复性测试 (5次运行)..."

@@ -508,25 +508,7 @@ def run_part_b():
     print(f"{'平均稳定性(CoV)':<20} {dt_avg_cov:<25.4f} {red_avg_cov:<25.4f}")
     print("-" * 80)
     
-    # 归一化函数 - 将所有指标转换到0-1范围,PLR和CoV取反(越小越好)
-    def normalize_metric(values, lower_is_better=False):
-        """
-        归一化到0-1范围
-        lower_is_better: True表示值越小越好(如PLR,CoV),需要反转
-        """
-        min_val = min(values)
-        max_val = max(values)
-        if max_val == min_val:
-            return [0.5] * len(values)  # 如果都相同,返回0.5
-        
-        normalized = [(v - min_val) / (max_val - min_val) for v in values]
-        
-        if lower_is_better:
-            normalized = [1 - v for v in normalized]  # 反转,使得越小的值归一化后越大
-        
-        return normalized
-    
-    # 准备数据
+    # 准备原始数据(不进行归一化)
     dt_goodputs = [droptail_results[v]['goodput'] for v in variants]
     dt_plrs = [droptail_results[v]['plr'] for v in variants]
     dt_fairness = [droptail_results[v]['fairness'] for v in variants]
@@ -537,25 +519,6 @@ def run_part_b():
     red_fairness = [red_results[v]['fairness'] for v in variants]
     red_covs = [red_results[v]['cov'] for v in variants]
     
-    # 合并所有数据进行归一化
-    all_goodputs = dt_goodputs + red_goodputs
-    all_plrs = dt_plrs + red_plrs
-    all_fairness = dt_fairness + red_fairness
-    all_covs = dt_covs + red_covs
-    
-    # 归一化(Goodput和Fairness越大越好,PLR和CoV越小越好)
-    norm_dt_goodputs = normalize_metric(all_goodputs, lower_is_better=False)[:len(variants)]
-    norm_red_goodputs = normalize_metric(all_goodputs, lower_is_better=False)[len(variants):]
-    
-    norm_dt_plrs = normalize_metric(all_plrs, lower_is_better=True)[:len(variants)]
-    norm_red_plrs = normalize_metric(all_plrs, lower_is_better=True)[len(variants):]
-    
-    norm_dt_fairness = normalize_metric(all_fairness, lower_is_better=False)[:len(variants)]
-    norm_red_fairness = normalize_metric(all_fairness, lower_is_better=False)[len(variants):]
-    
-    norm_dt_covs = normalize_metric(all_covs, lower_is_better=True)[:len(variants)]
-    norm_red_covs = normalize_metric(all_covs, lower_is_better=True)[len(variants):]
-    
     # 绘制单张图,包含8个堆叠柱状图 (DropTail和RED并列)
     fig, ax = plt.subplots(1, 1, figsize=(16, 8))
     
@@ -563,11 +526,11 @@ def run_part_b():
     x = np.arange(len(variants) * 2)
     width = 0.7
     
-    # 组合DropTail和RED的数据
-    combined_goodputs = norm_dt_goodputs + norm_red_goodputs
-    combined_plrs = norm_dt_plrs + norm_red_plrs
-    combined_fairness = norm_dt_fairness + norm_red_fairness
-    combined_covs = norm_dt_covs + norm_red_covs
+    # 组合DropTail和RED的原始数据
+    combined_goodputs = dt_goodputs + red_goodputs
+    combined_plrs = dt_plrs + red_plrs
+    combined_fairness = dt_fairness + red_fairness
+    combined_covs = dt_covs + red_covs
     
     # 绘制堆叠柱状图
     p1 = ax.bar(x, combined_goodputs, width, label='Goodput (Mbps)', 
@@ -697,7 +660,7 @@ def run_part_b():
                 'cov': analyzer.get_stability_cov()
             }
         
-        # 归一化500 Mbps的数据
+        # 准备500 Mbps的原始数据(不归一化)
         dt_500_goodputs = [droptail_500_results[v]['goodput'] for v in variants]
         dt_500_plrs = [droptail_500_results[v]['plr'] for v in variants]
         dt_500_fairness = [droptail_500_results[v]['fairness'] for v in variants]
@@ -708,32 +671,14 @@ def run_part_b():
         red_500_fairness = [red_500_results[v]['fairness'] for v in variants]
         red_500_covs = [red_500_results[v]['cov'] for v in variants]
         
-        # 合并数据进行归一化
-        all_500_goodputs = dt_500_goodputs + red_500_goodputs
-        all_500_plrs = dt_500_plrs + red_500_plrs
-        all_500_fairness = dt_500_fairness + red_500_fairness
-        all_500_covs = dt_500_covs + red_500_covs
-        
-        norm_dt_500_goodputs = normalize_metric(all_500_goodputs, lower_is_better=False)[:len(variants)]
-        norm_red_500_goodputs = normalize_metric(all_500_goodputs, lower_is_better=False)[len(variants):]
-        
-        norm_dt_500_plrs = normalize_metric(all_500_plrs, lower_is_better=True)[:len(variants)]
-        norm_red_500_plrs = normalize_metric(all_500_plrs, lower_is_better=True)[len(variants):]
-        
-        norm_dt_500_fairness = normalize_metric(all_500_fairness, lower_is_better=False)[:len(variants)]
-        norm_red_500_fairness = normalize_metric(all_500_fairness, lower_is_better=False)[len(variants):]
-        
-        norm_dt_500_covs = normalize_metric(all_500_covs, lower_is_better=True)[:len(variants)]
-        norm_red_500_covs = normalize_metric(all_500_covs, lower_is_better=True)[len(variants):]
-        
         # 绘制500 Mbps的图表
         fig2, ax2 = plt.subplots(1, 1, figsize=(16, 8))
         
-        # 组合数据
-        combined_500_goodputs = norm_dt_500_goodputs + norm_red_500_goodputs
-        combined_500_plrs = norm_dt_500_plrs + norm_red_500_plrs
-        combined_500_fairness = norm_dt_500_fairness + norm_red_500_fairness
-        combined_500_covs = norm_dt_500_covs + norm_red_500_covs
+        # 组合原始数据
+        combined_500_goodputs = dt_500_goodputs + red_500_goodputs
+        combined_500_plrs = dt_500_plrs + red_500_plrs
+        combined_500_fairness = dt_500_fairness + red_500_fairness
+        combined_500_covs = dt_500_covs + red_500_covs
         
         # 绘制堆叠柱状图
         p1 = ax2.bar(x, combined_500_goodputs, width, label='Goodput (Mbps)', 
@@ -775,15 +720,16 @@ def run_part_b():
     print("Part B 分析解释")
     print("=" * 80)
     
-    print("\n1. 归一化方法说明:")
+    print("\n1. 堆叠柱状图说明:")
     print("-" * 80)
-    print("为了在同一图表中比较不同量纲的指标,我们对所有4个指标进行了归一化:")
-    print("  - Goodput: 归一化到0-1 (越大越好,1表示最优)")
-    print("  - PLR: 归一化后反转 (越小越好,转换后1表示最优)")
-    print("  - Fairness: 归一化到0-1 (越大越好,1表示最优)")
-    print("  - Stability(CoV): 归一化后反转 (越小越好,转换后1表示最优)")
-    print("\n堆叠柱状图的总高度代表该变体在该队列下的综合性能。")
-    print("总分范围: 0-4 (每个指标贡献0-1分,总分越高越好)")
+    print("图表使用原始数据(未归一化)的堆叠柱状图:")
+    print("  - 蓝色: Goodput (Mbps) - 越大越好")
+    print("  - 橙色: PLR (%) - 越小越好")
+    print("  - 黄色: Fairness Index - 越大越好(接近1)")
+    print("  - 绿色: Stability (CoV) - 越小越好")
+    print("\n由于各指标量纲不同,堆叠高度不代表综合得分,")
+    print("而是展示各指标的原始值和相对贡献。")
+    print("主要看蓝色(Goodput)的高度对比和橙色(PLR)的厚度对比。")
     
     print("\n2. DropTail vs RED 主要差异:")
     print("-" * 80)
@@ -796,15 +742,28 @@ def run_part_b():
     print("  - 减少全局同步现象")
     print("  - 提供更平滑的丢包模式和更低的平均延迟")
     
-    print("\n3. 综合性能对比:")
+    print("\n3. 性能对比:")
     print("-" * 80)
     for i, variant in enumerate(variants):
-        dt_total = norm_dt_goodputs[i] + norm_dt_plrs[i] + norm_dt_fairness[i] + norm_dt_covs[i]
-        red_total = norm_red_goodputs[i] + norm_red_plrs[i] + norm_red_fairness[i] + norm_red_covs[i]
-        winner = "RED" if red_total > dt_total else "DropTail" if dt_total > red_total else "相同"
-        print(f"{variant.upper():<10} DropTail: {dt_total:.3f}  RED: {red_total:.3f}  → {winner}表现更好")
+        print(f"{variant.upper():<10} DropTail: G={dt_goodputs[i]:.2f} P={dt_plrs[i]:.4f}% F={dt_fairness[i]:.4f} C={dt_covs[i]:.4f}")
+        print(f"{'':10} RED:      G={red_goodputs[i]:.2f} P={red_plrs[i]:.4f}% F={red_fairness[i]:.4f} C={red_covs[i]:.4f}")
+        
+        # 简单对比
+        better_items = []
+        if red_goodputs[i] > dt_goodputs[i]:
+            better_items.append("Goodput")
+        if red_plrs[i] < dt_plrs[i]:
+            better_items.append("PLR")
+        if red_fairness[i] > dt_fairness[i]:
+            better_items.append("Fairness")
+        if red_covs[i] < dt_covs[i]:
+            better_items.append("Stability")
+        
+        if better_items:
+            print(f"{'':10} RED更好的指标: {', '.join(better_items)}")
+        print()
     
-    print("\n" + "=" * 80)
+    print("=" * 80)
 
 
 def run_part_c():

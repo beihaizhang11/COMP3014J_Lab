@@ -508,39 +508,107 @@ def run_part_b():
     print(f"{'平均稳定性(CoV)':<20} {dt_avg_cov:<25.4f} {red_avg_cov:<25.4f}")
     print("-" * 80)
     
-    # Plot comparison charts
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    # 归一化函数 - 将所有指标转换到0-1范围,PLR和CoV取反(越小越好)
+    def normalize_metric(values, lower_is_better=False):
+        """
+        归一化到0-1范围
+        lower_is_better: True表示值越小越好(如PLR,CoV),需要反转
+        """
+        min_val = min(values)
+        max_val = max(values)
+        if max_val == min_val:
+            return [0.5] * len(values)  # 如果都相同,返回0.5
+        
+        normalized = [(v - min_val) / (max_val - min_val) for v in values]
+        
+        if lower_is_better:
+            normalized = [1 - v for v in normalized]  # 反转,使得越小的值归一化后越大
+        
+        return normalized
     
-    metrics = ['goodput', 'plr', 'fairness', 'cov']
-    titles = ['Goodput (Mbps)', 'Packet Loss Rate (%)', 'Fairness Index', 'Stability (CoV)']
-    ylabels = ['Goodput (Mbps)', 'PLR (%)', 'Fairness Index', 'CoV']
+    # 准备数据
+    dt_goodputs = [droptail_results[v]['goodput'] for v in variants]
+    dt_plrs = [droptail_results[v]['plr'] for v in variants]
+    dt_fairness = [droptail_results[v]['fairness'] for v in variants]
+    dt_covs = [droptail_results[v]['cov'] for v in variants]
     
-    for idx, (metric, title, ylabel) in enumerate(zip(metrics, titles, ylabels)):
-        row = idx // 2
-        col = idx % 2
-        ax = axes[row, col]
-        
-        dt_values = [droptail_results[v][metric] for v in variants]
-        red_values = [red_results[v][metric] for v in variants]
-        
-        x = np.arange(len(variants))
-        width = 0.35
-        
-        bars1 = ax.bar(x - width/2, dt_values, width, label='DropTail', 
-                      color='#1f77b4', alpha=0.8, edgecolor='black', linewidth=1.2)
-        bars2 = ax.bar(x + width/2, red_values, width, label='RED', 
-                      color='#ff7f0e', alpha=0.8, edgecolor='black', linewidth=1.2)
-        
-        ax.set_ylabel(ylabel, fontsize=12, fontweight='bold')
-        ax.set_xlabel('TCP Variants', fontsize=12, fontweight='bold')
-        ax.set_title(f'{title} Comparison: DropTail vs RED', fontsize=13, fontweight='bold')
-        ax.set_xticks(x)
-        ax.set_xticklabels(variants, fontsize=11)
-        ax.legend(fontsize=11, loc='best')
-        ax.grid(axis='y', alpha=0.3, linestyle='--')
-        ax.set_axisbelow(True)
+    red_goodputs = [red_results[v]['goodput'] for v in variants]
+    red_plrs = [red_results[v]['plr'] for v in variants]
+    red_fairness = [red_results[v]['fairness'] for v in variants]
+    red_covs = [red_results[v]['cov'] for v in variants]
     
-    plt.tight_layout(pad=3.0)
+    # 合并所有数据进行归一化
+    all_goodputs = dt_goodputs + red_goodputs
+    all_plrs = dt_plrs + red_plrs
+    all_fairness = dt_fairness + red_fairness
+    all_covs = dt_covs + red_covs
+    
+    # 归一化(Goodput和Fairness越大越好,PLR和CoV越小越好)
+    norm_dt_goodputs = normalize_metric(all_goodputs, lower_is_better=False)[:len(variants)]
+    norm_red_goodputs = normalize_metric(all_goodputs, lower_is_better=False)[len(variants):]
+    
+    norm_dt_plrs = normalize_metric(all_plrs, lower_is_better=True)[:len(variants)]
+    norm_red_plrs = normalize_metric(all_plrs, lower_is_better=True)[len(variants):]
+    
+    norm_dt_fairness = normalize_metric(all_fairness, lower_is_better=False)[:len(variants)]
+    norm_red_fairness = normalize_metric(all_fairness, lower_is_better=False)[len(variants):]
+    
+    norm_dt_covs = normalize_metric(all_covs, lower_is_better=True)[:len(variants)]
+    norm_red_covs = normalize_metric(all_covs, lower_is_better=True)[len(variants):]
+    
+    # 绘制堆叠柱状图 (1行2列)
+    fig, axes = plt.subplots(1, 2, figsize=(18, 8))
+    
+    # 子图1: DropTail
+    ax1 = axes[0]
+    x = np.arange(len(variants))
+    width = 0.6
+    
+    # 堆叠柱状图
+    p1 = ax1.bar(x, norm_dt_goodputs, width, label='Goodput (Normalized)', 
+                color='#1f77b4', edgecolor='black', linewidth=1.2)
+    p2 = ax1.bar(x, norm_dt_plrs, width, bottom=norm_dt_goodputs,
+                label='PLR (Normalized, Inverted)', color='#ff7f0e', edgecolor='black', linewidth=1.2)
+    p3 = ax1.bar(x, norm_dt_fairness, width, 
+                bottom=[i+j for i,j in zip(norm_dt_goodputs, norm_dt_plrs)],
+                label='Fairness (Normalized)', color='#ffd700', edgecolor='black', linewidth=1.2)
+    p4 = ax1.bar(x, norm_dt_covs, width,
+                bottom=[i+j+k for i,j,k in zip(norm_dt_goodputs, norm_dt_plrs, norm_dt_fairness)],
+                label='Stability (Normalized, Inverted)', color='#2ca02c', edgecolor='black', linewidth=1.2)
+    
+    ax1.set_ylabel('Normalized Score (0-1)', fontsize=13, fontweight='bold')
+    ax1.set_xlabel('TCP Variants', fontsize=13, fontweight='bold')
+    ax1.set_title('DropTail Queue Performance', fontsize=15, fontweight='bold')
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(variants, fontsize=12)
+    ax1.legend(loc='upper left', fontsize=10)
+    ax1.grid(axis='y', alpha=0.3, linestyle='--')
+    ax1.set_axisbelow(True)
+    
+    # 子图2: RED
+    ax2 = axes[1]
+    
+    p1 = ax2.bar(x, norm_red_goodputs, width, label='Goodput (Normalized)', 
+                color='#1f77b4', edgecolor='black', linewidth=1.2)
+    p2 = ax2.bar(x, norm_red_plrs, width, bottom=norm_red_goodputs,
+                label='PLR (Normalized, Inverted)', color='#ff7f0e', edgecolor='black', linewidth=1.2)
+    p3 = ax2.bar(x, norm_red_fairness, width,
+                bottom=[i+j for i,j in zip(norm_red_goodputs, norm_red_plrs)],
+                label='Fairness (Normalized)', color='#ffd700', edgecolor='black', linewidth=1.2)
+    p4 = ax2.bar(x, norm_red_covs, width,
+                bottom=[i+j+k for i,j,k in zip(norm_red_goodputs, norm_red_plrs, norm_red_fairness)],
+                label='Stability (Normalized, Inverted)', color='#2ca02c', edgecolor='black', linewidth=1.2)
+    
+    ax2.set_ylabel('Normalized Score (0-1)', fontsize=13, fontweight='bold')
+    ax2.set_xlabel('TCP Variants', fontsize=13, fontweight='bold')
+    ax2.set_title('RED Queue Performance', fontsize=15, fontweight='bold')
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(variants, fontsize=12)
+    ax2.legend(loc='upper left', fontsize=10)
+    ax2.grid(axis='y', alpha=0.3, linestyle='--')
+    ax2.set_axisbelow(True)
+    
+    plt.tight_layout(pad=2.0)
     
     img_path = 'partB_comparison.png'
     if os.path.exists('comp3014j'):
@@ -580,16 +648,40 @@ def run_part_b():
     print(f"CSV已保存: {csv_path}")
     
     # 分析和解释
-    print("\n解释:")
-    print(f"DropTail和RED在性能上的主要差异体现在包丢失模式和队列管理策略上。")
-    print(f"RED通过主动的早期随机丢包,可以在队列填满前就开始丢包,从而:")
-    print(f"1. 减少全局同步现象 (多个TCP流同时进入慢启动)")
-    print(f"2. 降低平均队列长度,减少延迟")
-    print(f"3. 提供更平滑的丢包模式")
-    print(f"\nDropTail则是被动的尾部丢包,只在队列满时才丢包,可能导致:")
-    print(f"1. 突发性的大量丢包")
-    print(f"2. TCP流的全局同步")
-    print(f"3. 较高的队列延迟")
+    print("\n" + "=" * 80)
+    print("Part B 分析解释")
+    print("=" * 80)
+    
+    print("\n1. 归一化方法说明:")
+    print("-" * 80)
+    print("为了在同一图表中比较不同量纲的指标,我们对所有4个指标进行了归一化:")
+    print("  - Goodput: 归一化到0-1 (越大越好,1表示最优)")
+    print("  - PLR: 归一化后反转 (越小越好,转换后1表示最优)")
+    print("  - Fairness: 归一化到0-1 (越大越好,1表示最优)")
+    print("  - Stability(CoV): 归一化后反转 (越小越好,转换后1表示最优)")
+    print("\n堆叠柱状图的总高度代表该变体在该队列下的综合性能。")
+    print("总分范围: 0-4 (每个指标贡献0-1分,总分越高越好)")
+    
+    print("\n2. DropTail vs RED 主要差异:")
+    print("-" * 80)
+    print("DropTail (被动队列管理):")
+    print("  - 只在队列满时丢包")
+    print("  - 可能导致突发性丢包和全局同步")
+    print("  - 简单但可能产生较高的队列延迟")
+    print("\nRED (主动队列管理):")
+    print("  - 在队列填满前就开始概率性丢包")
+    print("  - 减少全局同步现象")
+    print("  - 提供更平滑的丢包模式和更低的平均延迟")
+    
+    print("\n3. 综合性能对比:")
+    print("-" * 80)
+    for i, variant in enumerate(variants):
+        dt_total = norm_dt_goodputs[i] + norm_dt_plrs[i] + norm_dt_fairness[i] + norm_dt_covs[i]
+        red_total = norm_red_goodputs[i] + norm_red_plrs[i] + norm_red_fairness[i] + norm_red_covs[i]
+        winner = "RED" if red_total > dt_total else "DropTail" if dt_total > red_total else "相同"
+        print(f"{variant.upper():<10} DropTail: {dt_total:.3f}  RED: {red_total:.3f}  → {winner}表现更好")
+    
+    print("\n" + "=" * 80)
 
 
 def run_part_c():
